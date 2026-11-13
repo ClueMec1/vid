@@ -1,0 +1,3926 @@
+<!DOCTYPE html>
+<html lang="yi" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ייִדיש סטודיאָ — Yiddish Keyboard, Dictionary & Offline Voice-to-Text</title>
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS & THEME VARIABLES
+       ========================================================================== */
+    :root {
+      --bg-app: #f4f1ea;
+      --bg-surface: #ffffff;
+      --bg-surface-2: #eae5d9;
+      --bg-header: #1e293b;
+      --text-header: #f8fafc;
+      --text-primary: #1c1917;
+      --text-secondary: #57534e;
+      --border-color: #d6d3d1;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: #dbeafe;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --success: #16a34a;
+      --success-soft: #dcfce7;
+      --warning: #d97706;
+      --warning-soft: #fef3c7;
+
+      /* Dynamic Keyboard Theme Defaults (overridden by KeyboardEngine) */
+      --kb-bg: #e7e2d5;
+      --kb-key-bg: #ffffff;
+      --kb-key-text: #1c1917;
+      --kb-key-sub: #78716c;
+      --kb-key-border: #c7c1b4;
+      --kb-key-active: #dbeafe;
+      --kb-key-special-bg: #d6cfc0;
+      --kb-font-size: 20px;
+      --kb-gap: 6px;
+      --kb-radius: 8px;
+
+      --font-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-yiddish: "Noto Serif Hebrew", "Frank Ruhl Libre", "David Libre", "Times New Roman", "Arial Hebrew", serif;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       2. HEADER & NAVIGATION TABS
+       ========================================================================== */
+    header {
+      background: var(--bg-header);
+      color: var(--text-header);
+      padding: 0.75rem 1.25rem;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-yiddish);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    }
+
+    .brand-title h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-title .yi-badge {
+      font-family: var(--font-yiddish);
+      font-size: 1.15rem;
+      color: #93c5fd;
+    }
+
+    .brand-title p {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    nav.tab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.25rem;
+      border-radius: 10px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: #cbd5e1;
+      border: none;
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ==========================================================================
+       3. MAIN LAYOUT & CARDS
+       ========================================================================== */
+    main {
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.18s ease;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1rem;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ==========================================================================
+       4. BUTTONS, INPUTS & BADGES
+       ========================================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--bg-surface-2);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #ffffff;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #15803d;
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      border-color: #fca5a5;
+      color: var(--danger);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #fecaca;
+    }
+
+    .btn-sm {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.78rem;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .yi-text {
+      font-family: var(--font-yiddish);
+      direction: rtl;
+      unicode-bidi: isolate;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-neutral { background: var(--bg-surface-2); color: var(--text-secondary); }
+    .badge-blue { background: var(--accent-soft); color: var(--accent); }
+    .badge-green { background: var(--success-soft); color: var(--success); }
+    .badge-amber { background: var(--warning-soft); color: var(--warning); }
+    .badge-red { background: var(--danger-soft); color: var(--danger); }
+
+    /* ==========================================================================
+       5. TAB 1: EDITOR, LIVE DICTATION & ON-SCREEN KEYBOARD
+       ========================================================================== */
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .yiddish-editor {
+      width: 100%;
+      min-height: 155px;
+      max-height: 360px;
+      resize: vertical;
+      font-family: var(--font-yiddish);
+      font-size: 1.65rem;
+      line-height: 1.75;
+      padding: 0.9rem 1.1rem;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      background: #fffdf9;
+      color: #1c1917;
+      direction: rtl;
+      text-align: right;
+    }
+
+    .editor-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* Google-Voice style Live Dictation Bar */
+    .dictation-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: linear-gradient(to right, #f8fafc, #eff6ff);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 0.65rem 1rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .mic-control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .mic-btn-wrapper {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-pulse-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: rgba(220, 38, 38, 0.25);
+      transform: scale(1);
+      transition: transform 0.08s ease-out, opacity 0.15s;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mic-btn {
+      position: relative;
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: #2563eb;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .mic-btn:hover {
+      transform: scale(1.05);
+      background: #1d4ed8;
+    }
+
+    .mic-btn.listening {
+      background: #dc2626;
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.2);
+    }
+
+    .mic-btn.speech-active {
+      background: #16a34a;
+      box-shadow: 0 0 0 5px rgba(22, 163, 74, 0.28);
+    }
+
+    .dictation-status-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .dictation-status-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .dictation-subtext {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .dictation-candidates {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .candidate-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.12s;
+    }
+
+    .candidate-chip:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    /* Autocomplete Bar */
+    .prediction-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-surface-2);
+      border: 1px solid var(--border-color);
+      border-radius: 10px 10px 0 0;
+      padding: 0.45rem 0.65rem;
+      overflow-x: auto;
+      min-height: 48px;
+    }
+
+    .prediction-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      padding-right: 0.35rem;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .prediction-list {
+      display: flex;
+      flex: 1;
+      gap: 0.45rem;
+      direction: rtl;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    .prediction-pill {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.28rem 0.8rem;
+      font-family: var(--font-yiddish);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.12s ease;
+    }
+
+    .prediction-pill:hover,
+    .prediction-pill.top-match {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: #1e3a8a;
+    }
+
+    .prediction-pill .freq-tag {
+      font-family: var(--font-ui);
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: rgba(0, 0, 0, 0.05);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    /* On-Screen Keyboard Container */
+    .keyboard-wrapper {
+      background: var(--kb-bg);
+      border: 1px solid var(--border-color);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 0.75rem;
+      user-select: none;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .keyboard-rows {
+      display: flex;
+      flex-direction: column;
+      gap: var(--kb-gap);
+      direction: rtl;
+    }
+
+    .kb-row {
+      display: flex;
+      justify-content: center;
+      gap: var(--kb-gap);
+      width: 100%;
+    }
+
+    .kb-key {
+      flex: var(--key-flex, 1) 1 0%;
+      min-width: 0;
+      height: 54px;
+      background: var(--kb-key-bg);
+      color: var(--kb-key-text);
+      border: 1px solid var(--kb-key-border);
+      border-bottom-width: 3px;
+      border-radius: var(--kb-radius);
+      font-family: var(--font-yiddish);
+      font-size: var(--kb-font-size);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 0.15rem 0.25rem;
+      transition: transform 0.06s ease, background-color 0.1s ease;
+      touch-action: manipulation;
+    }
+
+    .kb-key:hover {
+      filter: brightness(0.97);
+    }
+
+    .kb-key:active,
+    .kb-key.pressed {
+      transform: translateY(2px);
+      border-bottom-width: 1px;
+      background: var(--kb-key-active);
+    }
+
+    .kb-key.special {
+      background: var(--kb-key-special-bg);
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .kb-key.shift-active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent-hover);
+    }
+
+    .kb-key-main {
+      line-height: 1.1;
+    }
+
+    .kb-key-sub {
+      position: absolute;
+      top: 3px;
+      left: 5px;
+      font-size: 0.68rem;
+      font-family: var(--font-yiddish);
+      color: var(--kb-key-sub);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .kb-key-latin {
+      position: absolute;
+      bottom: 2px;
+      right: 5px;
+      font-size: 0.62rem;
+      font-family: var(--font-ui);
+      color: var(--kb-key-sub);
+      opacity: 0.65;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       6. TAB 2: DICTIONARY & VOICE TRAINER (SPLIT VIEW)
+       ========================================================================== */
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    @media (max-width: 920px) {
+      .split-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dict-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .dict-table-wrap {
+      max-height: 440px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    table.dict-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    table.dict-table th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-surface-2);
+      text-align: left;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 2;
+    }
+
+    table.dict-table td {
+      padding: 0.45rem 0.65rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    table.dict-table tr:hover {
+      background: #f8fafc;
+    }
+
+    table.dict-table tr.selected-word-row {
+      background: var(--accent-soft);
+    }
+
+    .dict-word-cell {
+      font-family: var(--font-yiddish);
+      font-size: 1.25rem;
+      font-weight: 600;
+      direction: rtl;
+      text-align: right;
+      cursor: pointer;
+    }
+
+    .freq-input {
+      width: 68px;
+      padding: 0.25rem 0.4rem !important;
+      font-size: 0.82rem !important;
+      text-align: center;
+    }
+
+    /* Voice Trainer Studio */
+    .trainer-target-box {
+      background: linear-gradient(135deg, #eff6ff, #f8fafc);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .trainer-target-word {
+      font-family: var(--font-yiddish);
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      line-height: 1.2;
+    }
+
+    .waveform-box {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 0.5rem;
+      margin-bottom: 0.85rem;
+      position: relative;
+    }
+
+    canvas.waveform-canvas {
+      width: 100%;
+      height: 96px;
+      display: block;
+      border-radius: 6px;
+    }
+
+    .vu-meter-track {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.45rem;
+    }
+
+    .vu-meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+      transition: width 0.05s linear;
+    }
+
+    .sample-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .sample-slot {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .sample-slot.recorded {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+
+    .sample-slot-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.84rem;
+    }
+
+    .mini-wave-canvas {
+      width: 110px;
+      height: 28px;
+      background: #e2e8f0;
+      border-radius: 4px;
+    }
+
+    /* ==========================================================================
+       7. TAB 3: KEYBOARD DESIGNER
+       ========================================================================== */
+    .designer-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .designer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .color-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.25rem 0.5rem;
+      background: #fff;
+    }
+
+    .color-picker-wrap input[type="color"] {
+      border: none;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .designer-key-selected {
+      outline: 3px solid var(--accent) !important;
+      outline-offset: 1px;
+    }
+
+    /* ==========================================================================
+       8. TAB 4: EXPORT & BACKUP
+       ========================================================================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-box {
+      background: var(--bg-surface-2);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+
+    .export-hero {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: #f8fafc;
+      border-radius: 12px;
+      padding: 1.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .export-hero h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.4rem;
+      color: #93c5fd;
+    }
+
+    .export-hero p {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin-bottom: 1rem;
+      max-width: 760px;
+    }
+
+    /* ==========================================================================
+       9. TOAST NOTIFICATION & MODAL OVERLAY
+       ========================================================================== */
+    .toast-container {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #1e293b;
+      color: #ffffff;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      pointer-events: auto;
+      animation: fadeIn 0.15s ease;
+      max-width: 340px;
+    }
+
+    .toast.success { border-left: 4px solid #22c55e; }
+    .toast.error { border-left: 4px solid #ef4444; }
+    .toast.info { border-left: 4px solid #3b82f6; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 90;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    @media (max-width: 600px) {
+      .kb-key {
+        height: 46px;
+        font-size: 16px;
+      }
+      .yiddish-editor {
+        font-size: 1.35rem;
+        min-height: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================================================
+       HEADER & TAB BAR
+       ======================================================================== -->
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">ייִ</div>
+        <div class="brand-title">
+          <h1>Yiddish Studio <span class="yi-badge">ייִדיש סטודיאָ</span></h1>
+          <p>Offline Keyboard, Frequency Dictionary &amp; Local MFCC Voice-to-Text</p>
+        </div>
+      </div>
+
+      <nav class="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="tab-typing" role="tab">
+          ⌨️ Keyboard &amp; Voice Typing
+        </button>
+        <button class="tab-btn" data-tab="tab-trainer" role="tab">
+          🎙️ Dictionary &amp; Voice Trainer
+        </button>
+        <button class="tab-btn" data-tab="tab-designer" role="tab">
+          🎨 Keyboard Designer
+        </button>
+        <button class="tab-btn" data-tab="tab-export" role="tab">
+          💾 Export / Backup
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       MAIN CONTENT AREA
+       ======================================================================== -->
+  <main>
+    <!-- ======================================================================
+         TAB 1: KEYBOARD & VOICE TYPING
+         ====================================================================== -->
+    <section id="tab-typing" class="tab-panel active">
+      <!-- Live Voice Dictation Strip -->
+      <div class="dictation-bar">
+        <div class="mic-control-group">
+          <div class="mic-btn-wrapper">
+            <div id="mic-pulse-ring" class="mic-pulse-ring"></div>
+            <button id="btn-live-mic" class="mic-btn" title="Toggle Live Yiddish Voice Dictation">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </button>
+          </div>
+          <div class="dictation-status-info">
+            <div class="dictation-status-title">
+              <span>Live Voice Dictation</span>
+              <span id="vad-status-badge" class="badge badge-neutral">Ready</span>
+            </div>
+            <div id="vad-subtext" class="dictation-subtext">
+              Click mic to speak trained Yiddish words offline (auto-inserts on pause).
+            </div>
+          </div>
+        </div>
+
+        <div id="dictation-candidates" class="dictation-candidates">
+          <!-- Runner-up DTW matches render here -->
+        </div>
+      </div>
+
+      <!-- Main Yiddish Text Editor -->
+      <div class="card">
+        <div class="editor-toolbar">
+          <div class="card-title">
+            <span>📝 Yiddish Text Editor</span>
+            <span class="badge badge-blue">RTL Unicode</span>
+          </div>
+          <div class="editor-actions">
+            <label style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" id="chk-physical-map" checked />
+              Physical Keyboard Yiddish Map
+            </label>
+            <button id="btn-copy-text" class="btn btn-sm">📋 Copy</button>
+            <button id="btn-download-txt" class="btn btn-sm">⬇️ Save .txt</button>
+            <button id="btn-clear-text" class="btn btn-sm btn-danger">🗑️ Clear</button>
+          </div>
+        </div>
+
+        <textarea
+          id="yiddish-editor"
+          class="yiddish-editor"
+          dir="rtl"
+          lang="yi"
+          placeholder="שרײַבט דאָ אויף ייִדיש אָדער ניצט די קלאַוויאַטור און מיקראָפֿאָן אונטן..."
+        ></textarea>
+
+        <div class="editor-footer">
+          <div id="editor-stats">0 words · 0 characters</div>
+          <div>Tip: Press <strong>Tab</strong> to accept top prediction · <strong>Shift</strong> toggles Niqqud/Diacritics</div>
+        </div>
+      </div>
+
+      <!-- Autocomplete Bar + On-Screen Keyboard -->
+      <div>
+        <div class="prediction-bar">
+          <span class="prediction-label">Predictions</span>
+          <div id="prediction-list" class="prediction-list"></div>
+        </div>
+        <div class="keyboard-wrapper">
+          <div id="onscreen-keyboard" class="keyboard-rows"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 2: DICTIONARY & VOICE TRAINER
+         ====================================================================== -->
+    <section id="tab-trainer" class="tab-panel">
+      <div class="split-grid">
+        <!-- Left Column: Dictionary Manager -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📚 Yiddish Frequency Dictionary</div>
+            <button id="btn-open-bulk-import" class="btn btn-sm">📥 Bulk Import</button>
+          </div>
+
+          <!-- Add New Word Form -->
+          <form id="form-add-word" class="dict-controls">
+            <input
+              type="text"
+              id="input-new-word"
+              class="yi-text"
+              placeholder="נײַ וואָרט..."
+              style="flex: 1; min-width: 140px; font-size: 1.15rem;"
+              required
+            />
+            <input
+              type="number"
+              id="input-new-freq"
+              value="50"
+              min="1"
+              max="99999"
+              title="Initial frequency score"
+              style="width: 78px;"
+            />
+            <button type="submit" class="btn btn-primary">+ Add Word</button>
+          </form>
+
+          <!-- Search & Filter -->
+          <div class="dict-controls">
+            <input
+              type="text"
+              id="input-search-dict"
+              placeholder="Search Yiddish word..."
+              style="flex: 1;"
+            />
+            <select id="select-dict-filter">
+              <option value="all">All Words</option>
+              <option value="trained">Trained Voice Only</option>
+              <option value="untrained">Untrained Only</option>
+            </select>
+          </div>
+
+          <!-- Dictionary Table -->
+          <div class="dict-table-wrap">
+            <table class="dict-table">
+              <thead>
+                <tr>
+                  <th style="text-align:right;">Yiddish Word</th>
+                  <th style="text-align:center;">Freq</th>
+                  <th style="text-align:center;">Voice</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dict-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: Local MFCC Voice Training Studio -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎙️ Voice Training Studio (MFCC + DTW)</div>
+            <span id="trainer-mic-status" class="badge badge-neutral">Mic Idle</span>
+          </div>
+
+          <div class="trainer-target-box">
+            <div>
+              <div style="font-size:0.75rem;font-weight:700;color:#475569;text-transform:uppercase;">
+                Selected Training Word
+              </div>
+              <div id="trainer-selected-word" class="trainer-target-word">שלום</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.35rem;">
+              <span id="trainer-sample-count-badge" class="badge badge-blue">0 / 5 Samples</span>
+              <button id="btn-test-match" class="btn btn-sm">🧪 Test Live Match</button>
+            </div>
+          </div>
+
+          <!-- Live Waveform & VU Meter -->
+          <div class="waveform-box">
+            <canvas id="trainer-waveform" class="waveform-canvas"></canvas>
+            <div class="vu-meter-track">
+              <div id="trainer-vu-fill" class="vu-meter-fill"></div>
+            </div>
+          </div>
+
+          <!-- 5 Sample Recording Slots -->
+          <div id="sample-slots-container" class="sample-slots"></div>
+
+          <!-- Acoustic Tuning Parameters -->
+          <div style="margin-top:1rem;padding-top:0.85rem;border-top:1px solid var(--border-color);">
+            <div style="font-size:0.82rem;font-weight:700;margin-bottom:0.5rem;">
+              Acoustic Engine Settings (VAD &amp; DTW)
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:0.65rem;">
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-secondary);display:block;">
+                  VAD Sensitivity (<span id="lbl-vad-thresh">0.025</span>)
+                </label>
+                <input type="range" id="range-vad-thresh" min="0.008" max="0.08" step="0.002" value="0.025" style="width:100%;" />
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-secondary);display:block;">
+                  Pause Trigger ms (<span id="lbl-vad-pause">600</span>ms)
+                </label>
+                <input type="range" id="range-vad-pause" min="350" max="1200" step="50" value="600" style="width:100%;" />
+              </div>
+              <div>
+                <label style="font-size:0.75rem;color:var(--text-secondary);display:block;">
+                  Match Strictness (<span id="lbl-dtw-thresh">68</span>%)
+                </label>
+                <input type="range" id="range-dtw-thresh" min="40" max="90" step="2" value="68" style="width:100%;" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 3: KEYBOARD DESIGNER
+         ====================================================================== -->
+    <section id="tab-designer" class="tab-panel">
+      <div class="designer-grid">
+        <!-- Left Sidebar: Theme & Selected Key Inspector -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🎨 Theme &amp; Layout Style</div>
+            </div>
+
+            <div class="form-group">
+              <label>Preset Theme</label>
+              <select id="select-kb-theme" style="width:100%;">
+                <option value="parchment">Classic Parchment</option>
+                <option value="midnight">Midnight Studio</option>
+                <option value="rosegold">Rose Gold</option>
+                <option value="contrast">High Contrast</option>
+                <option value="custom">Custom Colors</option>
+              </select>
+            </div>
+
+            <div class="color-row form-group">
+              <div>
+                <label>Board BG</label>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color-kb-bg" value="#e7e2d5" />
+                  <span style="font-size:0.75rem;">Board</span>
+                </div>
+              </div>
+              <div>
+                <label>Key BG</label>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color-key-bg" value="#ffffff" />
+                  <span style="font-size:0.75rem;">Keys</span>
+                </div>
+              </div>
+              <div>
+                <label>Key Text</label>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color-key-text" value="#1c1917" />
+                  <span style="font-size:0.75rem;">Text</span>
+                </div>
+              </div>
+              <div>
+                <label>Special Keys</label>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color-key-special" value="#d6cfc0" />
+                  <span style="font-size:0.75rem;">Action</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Key Font Size (<span id="lbl-kb-fontsize">20</span>px)</label>
+              <input type="range" id="range-kb-fontsize" min="14" max="30" value="20" style="width:100%;" />
+            </div>
+
+            <div class="form-group">
+              <label>Key Spacing / Gap (<span id="lbl-kb-gap">6</span>px)</label>
+              <input type="range" id="range-kb-gap" min="2" max="14" value="6" style="width:100%;" />
+            </div>
+
+            <button id="btn-reset-keyboard" class="btn btn-danger btn-sm" style="width:100%;">
+              ↺ Reset Default Yiddish Layout
+            </button>
+          </div>
+
+          <!-- Selected Key Reprogram Inspector -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🔧 Key Reprogrammer</div>
+            </div>
+
+            <div id="key-inspector-empty" style="font-size:0.85rem;color:var(--text-secondary);">
+              Click any key in the preview on the right to edit its output, label, width, or position.
+            </div>
+
+            <div id="key-inspector-form" style="display:none;">
+              <div class="form-group">
+                <label>Primary Output Character / String</label>
+                <input type="text" id="edit-key-primary" class="yi-text" style="width:100%;font-size:1.25rem;" />
+              </div>
+              <div class="form-group">
+                <label>Shift / Niqqud Output</label>
+                <input type="text" id="edit-key-shift" class="yi-text" style="width:100%;font-size:1.25rem;" />
+              </div>
+              <div class="form-group">
+                <label>Display Label (optional override)</label>
+                <input type="text" id="edit-key-label" style="width:100%;" />
+              </div>
+              <div class="form-group">
+                <label>Width Multiplier</label>
+                <select id="edit-key-width" style="width:100%;">
+                  <option value="1">1.0x (Standard)</option>
+                  <option value="1.25">1.25x</option>
+                  <option value="1.5">1.5x (Medium)</option>
+                  <option value="2">2.0x (Wide)</option>
+                  <option value="4">4.0x (Spacebar)</option>
+                </select>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.65rem;">
+                <button id="btn-key-move-right" class="btn btn-sm" title="Move Earlier (Right in RTL)">➡️ Move Right</button>
+                <button id="btn-key-move-left" class="btn btn-sm" title="Move Later (Left in RTL)">⬅️ Move Left</button>
+                <button id="btn-key-move-up" class="btn btn-sm" title="Move Up One Row">⬆️ Row Up</button>
+                <button id="btn-key-move-down" class="btn btn-sm" title="Move Down One Row">⬇️ Row Down</button>
+                <button id="btn-key-delete" class="btn btn-sm btn-danger">🗑️ Remove Key</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Area: Interactive Live Keyboard Preview -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⌨️ Interactive Keyboard Canvas (Click a Key to Edit)</div>
+            <div style="display:flex;gap:0.4rem;">
+              <button id="btn-add-row" class="btn btn-sm">+ Add Row</button>
+            </div>
+          </div>
+
+          <div id="designer-rows-container" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 4: EXPORT / BACKUP (SELF-CONTAINED HTML GENERATOR)
+         ====================================================================== -->
+    <section id="tab-export" class="tab-panel">
+      <div class="export-hero">
+        <h3>🚀 Self-Export Standalone HTML Application</h3>
+        <p>
+          Package your entire custom Yiddish keyboard layout, frequency-ranked dictionary, and all recorded
+          MFCC voice fingerprints + audio snippets directly into a single portable <code>.html</code> file.
+          Open the exported file on any computer or phone offline and everything boots up ready to use.
+        </p>
+
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.65rem;">
+          <input
+            type="text"
+            id="input-export-filename"
+            value="my-yiddish-keyboard.html"
+            style="min-width:240px;font-weight:600;"
+          />
+          <button id="btn-self-export" class="btn btn-success" style="padding:0.6rem 1.2rem;font-size:0.95rem;">
+            📦 Self-Export Standalone File
+          </button>
+        </div>
+      </div>
+
+      <!-- Storage Statistics -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div id="stat-dict-count" class="stat-value">0</div>
+          <div class="stat-label">Dictionary Words</div>
+        </div>
+        <div class="stat-box">
+          <div id="stat-trained-words" class="stat-value">0</div>
+          <div class="stat-label">Voice-Trained Words</div>
+        </div>
+        <div class="stat-box">
+          <div id="stat-sample-count" class="stat-value">0</div>
+          <div class="stat-label">Total Voice Fingerprints</div>
+        </div>
+        <div class="stat-box">
+          <div id="stat-est-size" class="stat-value">0 KB</div>
+          <div class="stat-label">Estimated Export File Size</div>
+        </div>
+      </div>
+
+      <!-- JSON Backup / Restore -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔄 Raw JSON Data Backup &amp; Restore</div>
+        </div>
+        <p style="font-size:0.86rem;color:var(--text-secondary);margin-bottom:0.85rem;">
+          Export or import only your raw JSON state (dictionary, keyboard layout, and MFCC fingerprints) to merge or migrate between instances.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
+          <button id="btn-export-json" class="btn">⬇️ Download JSON Backup</button>
+          <label class="btn" style="cursor:pointer;">
+            ⬆️ Import JSON Backup
+            <input type="file" id="input-import-json" accept=".json,application/json" style="display:none;" />
+          </label>
+          <button id="btn-factory-reset" class="btn btn-danger">⚠️ Factory Reset All Data</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+       BULK IMPORT MODAL
+       ======================================================================== -->
+  <div id="modal-bulk-import" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="card-header">
+        <div class="card-title">📥 Bulk Import Yiddish Words</div>
+        <button id="btn-close-bulk-modal" class="btn btn-sm">✕</button>
+      </div>
+      <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:0.65rem;">
+        Paste Yiddish words below (one per line, or <code>word, frequency</code>). Existing words will have their frequency updated if higher.
+      </p>
+      <textarea
+        id="textarea-bulk-words"
+        class="yi-text"
+        rows="8"
+        style="width:100%;font-size:1.15rem;margin-bottom:0.75rem;"
+        placeholder="שלום עליכם, 120&#10;אַ גוטן טאָג, 100&#10;דאַנקען"
+      ></textarea>
+      <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+        <button id="btn-cancel-bulk" class="btn">Cancel</button>
+        <button id="btn-confirm-bulk" class="btn btn-primary">Import Words</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ========================================================================
+       EMBEDDED PRELOADED PAYLOAD FOR SELF-EXPORTING STANDALONE BUILDS
+       When Self-Export runs, this tag is populated with serialized state JSON.
+       ======================================================================== -->
+  <script id="preloaded-state" type="application/json">null</script>
+
+  <!-- ========================================================================
+       MAIN APPLICATION JAVASCRIPT (MODULAR ARCHITECTURE)
+       ======================================================================== -->
+  <script>
+    (() => {
+      "use strict";
+
+      /* ======================================================================
+         MODULE 1: DEFAULT DATA & STARTER YIDDISH DICTIONARY
+         ====================================================================== */
+      const STARTER_DICTIONARY = [
+        { word: "שלום", freq: 240 },
+        { word: "וואָס", freq: 230 },
+        { word: "איך", freq: 225 },
+        { word: "דו", freq: 215 },
+        { word: "מיר", freq: 210 },
+        { word: "איר", freq: 205 },
+        { word: "זיי", freq: 200 },
+        { word: "יאָ", freq: 198 },
+        { word: "ניין", freq: 195 },
+        { word: "אַ דאַנק", freq: 192 },
+        { word: "ביטע", freq: 190 },
+        { word: "גוט", freq: 188 },
+        { word: "זייער גוט", freq: 185 },
+        { word: "מאַכסטו", freq: 182 },
+        { word: "הײַנט", freq: 178 },
+        { word: "מאָרגן", freq: 175 },
+        { word: "נעכטן", freq: 170 },
+        { word: "גוט מאָרגן", freq: 168 },
+        { word: "גוט נאַכט", freq: 165 },
+        { word: "אַ גוטן טאָג", freq: 162 },
+        { word: "אַ גוטע וואָך", freq: 160 },
+        { word: "שבת שלום", freq: 158 },
+        { word: "מזל טוב", freq: 156 },
+        { word: "לחיים", freq: 154 },
+        { word: "ליבע", freq: 150 },
+        { word: "משפּחה", freq: 148 },
+        { word: "חבֿר", freq: 145 },
+        { word: "חבֿרטע", freq: 142 },
+        { word: "קינדער", freq: 140 },
+        { word: "מאַמע", freq: 138 },
+        { word: "טאַטע", freq: 136 },
+        { word: "באָבע", freq: 134 },
+        { word: "זיידע", freq: 132 },
+        { word: "הויז", freq: 130 },
+        { word: "שטאָט", freq: 128 },
+        { word: "אַרבעט", freq: 126 },
+        { word: "צײַט", freq: 125 },
+        { word: "יאָר", freq: 123 },
+        { word: "טאָג", freq: 121 },
+        { word: "נאַכט", freq: 120 },
+        { word: "עסן", freq: 118 },
+        { word: "טרינקען", freq: 116 },
+        { word: "וואַסער", freq: 114 },
+        { word: "ברויט", freq: 112 },
+        { word: "קאַווע", freq: 110 },
+        { word: "טיי", freq: 108 },
+        { word: "גיין", freq: 106 },
+        { word: "קומען", freq: 104 },
+        { word: "רעדן", freq: 102 },
+        { word: "שרײַבן", freq: 100 },
+        { word: "לייענען", freq: 98 },
+        { word: "לערנען", freq: 96 },
+        { word: "וויסן", freq: 94 },
+        { word: "פֿאַרשטיין", freq: 92 },
+        { word: "הערן", freq: 90 },
+        { word: "זען", freq: 88 },
+        { word: "ליב האָבן", freq: 86 },
+        { word: "אַנטשולדיקט", freq: 85 },
+        { word: "פֿאַרוואָס", freq: 84 },
+        { word: "ווען", freq: 82 },
+        { word: "וווּ", freq: 80 },
+        { word: "ווער", freq: 78 },
+        { word: "ווי אַזוי", freq: 76 },
+        { word: "אַ סך", freq: 75 },
+        { word: "אַ ביסל", freq: 74 },
+        { word: "אַלץ", freq: 72 },
+        { word: "גאָרנישט", freq: 70 },
+        { word: "שיין", freq: 68 },
+        { word: "קלוג", freq: 66 },
+        { word: "פֿריילעך", freq: 65 },
+        { word: "געזונט", freq: 64 },
+        { word: "זײַ געזונט", freq: 63 },
+        { word: "אויף ווידערזען", freq: 62 },
+        { word: "בוך", freq: 60 },
+        { word: "ביכער", freq: 58 },
+        { word: "ליד", freq: 56 },
+        { word: "מוזיק", freq: 55 },
+        { word: "שפּראַך", freq: 54 },
+        { word: "ייִדיש", freq: 199 },
+        { word: "וועלט", freq: 52 },
+        { word: "לעבן", freq: 51 },
+        { word: "האַרץ", freq: 50 },
+        { word: "נשמה", freq: 49 },
+        { word: "מזל", freq: 48 },
+        { word: "ברכה", freq: 47 }
+      ];
+
+      const KEYBOARD_THEMES = {
+        parchment: {
+          kbBg: "#e7e2d5",
+          keyBg: "#ffffff",
+          keyText: "#1c1917",
+          keySpecial: "#d6cfc0",
+          keyBorder: "#c7c1b4"
+        },
+        midnight: {
+          kbBg: "#0f172a",
+          keyBg: "#1e293b",
+          keyText: "#f8fafc",
+          keySpecial: "#334155",
+          keyBorder: "#475569"
+        },
+        rosegold: {
+          kbBg: "#f3e1dd",
+          keyBg: "#fffaf9",
+          keyText: "#4a2525",
+          keySpecial: "#e6c3bc",
+          keyBorder: "#d4a69d"
+        },
+        contrast: {
+          kbBg: "#000000",
+          keyBg: "#111111",
+          keyText: "#fde047",
+          keySpecial: "#27272a",
+          keyBorder: "#fde047"
+        }
+      };
+
+      const DEFAULT_KEYBOARD_LAYOUT = {
+        theme: "parchment",
+        colors: { ...KEYBOARD_THEMES.parchment },
+        fontSize: 20,
+        gap: 6,
+        rows: [
+          [
+            { id: "k_1", primary: "ק", shift: "1", latin: "q", width: 1 },
+            { id: "k_2", primary: "ר", shift: "2", latin: "w", width: 1 },
+            { id: "k_3", primary: "א", shift: "אַ", latin: "e", width: 1 },
+            { id: "k_4", primary: "ט", shift: "אָ", latin: "r", width: 1 },
+            { id: "k_5", primary: "ו", shift: "וּ", latin: "t", width: 1 },
+            { id: "k_6", primary: "ן", shift: "5", latin: "y", width: 1 },
+            { id: "k_7", primary: "ם", shift: "6", latin: "u", width: 1 },
+            { id: "k_8", primary: "פ", shift: "פּ", latin: "i", width: 1 },
+            { id: "k_9", primary: "פֿ", shift: "9", latin: "o", width: 1 },
+            { id: "k_10", primary: "ב", shift: "בֿ", latin: "p", width: 1 },
+            { id: "k_bksp", primary: "⌫", shift: "⌫", label: "⌫", type: "backspace", width: 1.5 }
+          ],
+          [
+            { id: "k_11", primary: "ש", shift: "שׂ", latin: "a", width: 1 },
+            { id: "k_12", primary: "ד", shift: "־", latin: "s", width: 1 },
+            { id: "k_13", primary: "ג", shift: "״", latin: "d", width: 1 },
+            { id: "k_14", primary: "כ", shift: "כּ", latin: "f", width: 1 },
+            { id: "k_15", primary: "ע", shift: "׳", latin: "g", width: 1 },
+            { id: "k_16", primary: "י", shift: "יִ", latin: "h", width: 1 },
+            { id: "k_17", primary: "ח", shift: "7", latin: "j", width: 1 },
+            { id: "k_18", primary: "ל", shift: "8", latin: "k", width: 1 },
+            { id: "k_19", primary: "ך", shift: ":", latin: "l", width: 1 },
+            { id: "k_20", primary: "ף", shift: ";", latin: ";", width: 1 },
+            { id: "k_enter", primary: "\n", shift: "\n", label: "⏎", type: "enter", width: 1.5 }
+          ],
+          [
+            { id: "k_shift", primary: "SHIFT", shift: "SHIFT", label: "⇧ נקודות", type: "shift", width: 1.5 },
+            { id: "k_21", primary: "ז", shift: "!", latin: "z", width: 1 },
+            { id: "k_22", primary: "ס", shift: "?", latin: "x", width: 1 },
+            { id: "k_23", primary: "וו", shift: "וי", latin: "c", width: 1 },
+            { id: "k_24", primary: "ה", shift: "ײַ", latin: "v", width: 1 },
+            { id: "k_25", primary: "נ", shift: "יי", latin: "b", width: 1 },
+            { id: "k_26", primary: "מ", shift: "(", latin: "n", width: 1 },
+            { id: "k_27", primary: "צ", shift: ")", latin: "m", width: 1 },
+            { id: "k_28", primary: "ת", shift: "תּ", latin: ",", width: 1 },
+            { id: "k_29", primary: "ץ", shift: "„", latin: ".", width: 1 },
+            { id: "k_30", primary: ".", shift: "”", latin: "/", width: 1 }
+          ],
+          [
+            { id: "k_31", primary: ",", shift: "־", width: 1 },
+            { id: "k_32", primary: "ײַ", shift: "יי", width: 1.25 },
+            { id: "k_33", primary: "וי", shift: "וו", width: 1.25 },
+            { id: "k_space", primary: " ", shift: " ", label: "רוים (Space)", type: "space", width: 4 },
+            { id: "k_34", primary: "אַ", shift: "אָ", width: 1.25 },
+            { id: "k_35", primary: "פּ", shift: "פֿ", width: 1.25 },
+            { id: "k_36", primary: "?", shift: "!", width: 1 }
+          ]
+        ]
+      };
+
+      /* ======================================================================
+         MODULE 2: STORE MANAGER (LocalStorage + IndexedDB + Preloaded Hydration)
+         ====================================================================== */
+      class StoreManager {
+        constructor() {
+          this.LS_KEY = "yiddish_studio_state_v1";
+          this.DB_NAME = "YiddishStudioVoiceDB";
+          this.DB_STORE = "voice_samples";
+          this.db = null;
+
+          this.state = {
+            version: 1,
+            updatedAt: Date.now(),
+            dictionary: [],
+            keyboard: JSON.parse(JSON.stringify(DEFAULT_KEYBOARD_LAYOUT)),
+            settings: {
+              vadThreshold: 0.025,
+              vadPauseMs: 600,
+              dtwStrictness: 68,
+              physicalMap: true
+            }
+          };
+
+          // Map of word -> Array of { id, mfcc: number[][], wavBase64: string, durationMs: number, createdAt: number }
+          this.voiceSamples = {};
+        }
+
+        async init() {
+          await this._openIndexedDB();
+
+          // 1. Check if this file has an embedded preloaded payload from Self-Export
+          const embeddedPayload = this._readEmbeddedPayload();
+          const localRaw = localStorage.getItem(this.LS_KEY);
+          let localParsed = null;
+          if (localRaw) {
+            try {
+              localParsed = JSON.parse(localRaw);
+            } catch (e) {
+              console.warn("Corrupt localStorage state ignored", e);
+            }
+          }
+
+          // Hydrate from embedded payload if local storage is empty OR embedded build is newer
+          if (embeddedPayload && (!localParsed || (embeddedPayload.updatedAt || 0) >= (localParsed.updatedAt || 0))) {
+            this.state = {
+              ...this.state,
+              ...embeddedPayload.state
+            };
+            this.voiceSamples = embeddedPayload.voiceSamples || {};
+            this.saveState();
+            await this._persistAllVoiceSamplesToIDB();
+          } else if (localParsed) {
+            this.state = {
+              ...this.state,
+              ...localParsed
+            };
+            this.voiceSamples = await this._loadAllVoiceSamplesFromIDB();
+          } else {
+            // First fresh boot: load starter dictionary
+            this.state.dictionary = STARTER_DICTIONARY.map((item) => ({ ...item }));
+            this.saveState();
+          }
+
+          // Ensure dictionary always has valid structure
+          if (!Array.isArray(this.state.dictionary) || this.state.dictionary.length === 0) {
+            this.state.dictionary = STARTER_DICTIONARY.map((item) => ({ ...item }));
+          }
+        }
+
+        _readEmbeddedPayload() {
+          try {
+            const el = document.getElementById("preloaded-state");
+            if (!el) return null;
+            const txt = el.textContent.trim();
+            if (!txt || txt === "null") return null;
+            return JSON.parse(txt);
+          } catch (e) {
+            console.error("Failed parsing embedded preloaded payload:", e);
+            return null;
+          }
+        }
+
+        _openIndexedDB() {
+          return new Promise((resolve) => {
+            if (!window.indexedDB) {
+              resolve(null);
+              return;
+            }
+            const req = indexedDB.open(this.DB_NAME, 1);
+            req.onupgradeneeded = (ev) => {
+              const db = ev.target.result;
+              if (!db.objectStoreNames.contains(this.DB_STORE)) {
+                db.createObjectStore(this.DB_STORE, { keyPath: "word" });
+              }
+            };
+            req.onsuccess = (ev) => {
+              this.db = ev.target.result;
+              resolve(this.db);
+            };
+            req.onerror = () => {
+              console.warn("IndexedDB unavailable, falling back to in-memory voice store.");
+              resolve(null);
+            };
+          });
+        }
+
+        async _loadAllVoiceSamplesFromIDB() {
+          if (!this.db) return {};
+          return new Promise((resolve) => {
+            try {
+              const tx = this.db.transaction(this.DB_STORE, "readonly");
+              const store = tx.objectStore(this.DB_STORE);
+              const req = store.getAll();
+              req.onsuccess = () => {
+                const map = {};
+                for (const entry of req.result || []) {
+                  if (entry && entry.word && Array.isArray(entry.samples)) {
+                    map[entry.word] = entry.samples;
+                  }
+                }
+                resolve(map);
+              };
+              req.onerror = () => resolve({});
+            } catch (e) {
+              resolve({});
+            }
+          });
+        }
+
+        async _persistWordSamplesToIDB(word) {
+          if (!this.db) return;
+          return new Promise((resolve) => {
+            try {
+              const tx = this.db.transaction(this.DB_STORE, "readwrite");
+              const store = tx.objectStore(this.DB_STORE);
+              const samples = this.voiceSamples[word] || [];
+              if (samples.length === 0) {
+                store.delete(word);
+              } else {
+                store.put({ word, samples });
+              }
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => resolve();
+            } catch (e) {
+              resolve();
+            }
+          });
+        }
+
+        async _persistAllVoiceSamplesToIDB() {
+          if (!this.db) return;
+          const words = Object.keys(this.voiceSamples);
+          for (const w of words) {
+            await this._persistWordSamplesToIDB(w);
+          }
+        }
+
+        saveState() {
+          this.state.updatedAt = Date.now();
+          try {
+            localStorage.setItem(this.LS_KEY, JSON.stringify(this.state));
+          } catch (e) {
+            console.warn("LocalStorage save error:", e);
+          }
+        }
+
+        async saveVoiceSample(word, slotIndex, sampleObj) {
+          if (!this.voiceSamples[word]) {
+            this.voiceSamples[word] = [];
+          }
+          // Ensure slot array up to 5 slots
+          const arr = this.voiceSamples[word];
+          arr[slotIndex] = sampleObj;
+          // Compact undefined holes if any, keeping slot order cleanly
+          this.voiceSamples[word] = arr.filter(Boolean).slice(0, 5);
+          this.saveState();
+          await this._persistWordSamplesToIDB(word);
+        }
+
+        async deleteVoiceSample(word, idx) {
+          if (!this.voiceSamples[word]) return;
+          this.voiceSamples[word].splice(idx, 1);
+          if (this.voiceSamples[word].length === 0) {
+            delete this.voiceSamples[word];
+          }
+          this.saveState();
+          await this._persistWordSamplesToIDB(word);
+        }
+
+        getFullExportBundle() {
+          return {
+            exportedAt: new Date().toISOString(),
+            updatedAt: Date.now(),
+            state: this.state,
+            voiceSamples: this.voiceSamples
+          };
+        }
+
+        async factoryReset() {
+          localStorage.removeItem(this.LS_KEY);
+          this.voiceSamples = {};
+          if (this.db) {
+            await new Promise((resolve) => {
+              const tx = this.db.transaction(this.DB_STORE, "readwrite");
+              tx.objectStore(this.DB_STORE).clear();
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => resolve();
+            });
+          }
+          this.state = {
+            version: 1,
+            updatedAt: Date.now(),
+            dictionary: STARTER_DICTIONARY.map((item) => ({ ...item })),
+            keyboard: JSON.parse(JSON.stringify(DEFAULT_KEYBOARD_LAYOUT)),
+            settings: {
+              vadThreshold: 0.025,
+              vadPauseMs: 600,
+              dtwStrictness: 68,
+              physicalMap: true
+            }
+          };
+          this.saveState();
+        }
+      }
+
+      /* ======================================================================
+         MODULE 3: PURE-JS MFCC ACOUSTIC FEATURE EXTRACTOR
+         Implements: Pre-emphasis -> Framing -> Hamming -> Radix-2 FFT ->
+                     Mel Filterbank -> Log Energy -> DCT -> CMN
+         ====================================================================== */
+      class MFCCExtractor {
+        constructor(options = {}) {
+          this.sampleRate = options.sampleRate || 16000;
+          // 25ms frame (400 samples @ 16kHz) zero-padded to 512-point Radix-2 FFT
+          this.windowSamples = options.windowSamples || 400;
+          this.frameSize = options.frameSize || 512;
+          this.hopSize = options.hopSize || 160; // 10ms hop @ 16kHz
+          this.numFilters = options.numFilters || 26;
+          this.numCoeffs = options.numCoeffs || 13;
+          this.preEmphasis = 0.97;
+
+          this.hammingWindow = this._buildHammingWindow(this.windowSamples);
+          this.melFilterbank = this._buildMelFilterbank(
+            this.numFilters,
+            this.frameSize,
+            this.sampleRate,
+            80,
+            this.sampleRate / 2
+          );
+          this.dctMatrix = this._buildDCTMatrix(this.numCoeffs, this.numFilters);
+        }
+
+        _buildHammingWindow(N) {
+          const win = new Float32Array(N);
+          for (let n = 0; n < N; n++) {
+            win[n] = 0.54 - 0.46 * Math.cos((2 * Math.PI * n) / (N - 1));
+          }
+          return win;
+        }
+
+        _hzToMel(hz) {
+          return 2595 * Math.log10(1 + hz / 700);
+        }
+
+        _melToHz(mel) {
+          return 700 * (Math.pow(10, mel / 2595) - 1);
+        }
+
+        _buildMelFilterbank(numFilters, fftSize, sampleRate, lowFreq, highFreq) {
+          const lowMel = this._hzToMel(lowFreq);
+          const highMel = this._hzToMel(highFreq);
+          const melPoints = new Float32Array(numFilters + 2);
+          for (let i = 0; i < numFilters + 2; i++) {
+            melPoints[i] = lowMel + ((highMel - lowMel) * i) / (numFilters + 1);
+          }
+
+          const bins = new Int32Array(numFilters + 2);
+          for (let i = 0; i < numFilters + 2; i++) {
+            const hz = this._melToHz(melPoints[i]);
+            bins[i] = Math.floor(((fftSize + 1) * hz) / sampleRate);
+          }
+
+          const numSpecBins = fftSize / 2 + 1;
+          const bank = [];
+          for (let m = 1; m <= numFilters; m++) {
+            const filter = new Float32Array(numSpecBins);
+            const left = bins[m - 1];
+            const center = bins[m];
+            const right = bins[m + 1];
+
+            for (let k = left; k < center; k++) {
+              if (k >= 0 && k < numSpecBins && center !== left) {
+                filter[k] = (k - left) / (center - left);
+              }
+            }
+            for (let k = center; k <= right; k++) {
+              if (k >= 0 && k < numSpecBins && right !== center) {
+                filter[k] = (right - k) / (right - center);
+              }
+            }
+            bank.push(filter);
+          }
+          return bank;
+        }
+
+        _buildDCTMatrix(numCoeffs, numFilters) {
+          const mat = [];
+          const scale = Math.sqrt(2 / numFilters);
+          for (let i = 0; i < numCoeffs; i++) {
+            const row = new Float32Array(numFilters);
+            for (let j = 0; j < numFilters; j++) {
+              row[j] = scale * Math.cos((Math.PI * i * (j + 0.5)) / numFilters);
+            }
+            mat.push(row);
+          }
+          return mat;
+        }
+
+        /**
+         * In-place Cooley-Tukey Radix-2 FFT
+         */
+        _fft(real, imag) {
+          const n = real.length;
+          let j = 0;
+          for (let i = 0; i < n; i++) {
+            if (i < j) {
+              [real[i], real[j]] = [real[j], real[i]];
+              [imag[i], imag[j]] = [imag[j], imag[i]];
+            }
+            let m = n >> 1;
+            while (m >= 1 && j >= m) {
+              j -= m;
+              m >>= 1;
+            }
+            j += m;
+          }
+
+          for (let size = 2; size <= n; size <<= 1) {
+            const half = size >> 1;
+            const step = (-2 * Math.PI) / size;
+            for (let i = 0; i < n; i += size) {
+              for (let k = 0; k < half; k++) {
+                const angle = k * step;
+                const wr = Math.cos(angle);
+                const wi = Math.sin(angle);
+                const tr = wr * real[i + k + half] - wi * imag[i + k + half];
+                const ti = wr * imag[i + k + half] + wi * real[i + k + half];
+                real[i + k + half] = real[i + k] - tr;
+                imag[i + k + half] = imag[i + k] - ti;
+                real[i + k] += tr;
+                imag[i + k] += ti;
+              }
+            }
+          }
+        }
+
+        /**
+         * Extracts normalized MFCC feature matrix [numFrames][numCoeffs]
+         */
+        extract(pcmFloat32) {
+          if (!pcmFloat32 || pcmFloat32.length < this.windowSamples) {
+            return [];
+          }
+
+          // 1. Pre-emphasis filter
+          const emphasized = new Float32Array(pcmFloat32.length);
+          emphasized[0] = pcmFloat32[0];
+          for (let i = 1; i < pcmFloat32.length; i++) {
+            emphasized[i] = pcmFloat32[i] - this.preEmphasis * pcmFloat32[i - 1];
+          }
+
+          const frames = [];
+          const numSpecBins = this.frameSize / 2 + 1;
+          const real = new Float32Array(this.frameSize);
+          const imag = new Float32Array(this.frameSize);
+          const powerSpec = new Float32Array(numSpecBins);
+          const melEnergies = new Float32Array(this.numFilters);
+
+          for (let start = 0; start + this.windowSamples <= emphasized.length; start += this.hopSize) {
+            // 2. Apply 25ms Hamming window + zero-pad to 512 FFT size
+            real.fill(0);
+            imag.fill(0);
+            for (let i = 0; i < this.windowSamples; i++) {
+              real[i] = emphasized[start + i] * this.hammingWindow[i];
+            }
+
+            // 3. FFT & Power Spectrum
+            this._fft(real, imag);
+            for (let k = 0; k < numSpecBins; k++) {
+              powerSpec[k] = (real[k] * real[k] + imag[k] * imag[k]) / this.frameSize;
+            }
+
+            // 4. Mel Filterbank & Log Energies
+            for (let m = 0; m < this.numFilters; m++) {
+              const filter = this.melFilterbank[m];
+              let sum = 1e-10;
+              for (let k = 0; k < numSpecBins; k++) {
+                sum += powerSpec[k] * filter[k];
+              }
+              melEnergies[m] = Math.log(sum);
+            }
+
+            // 5. Discrete Cosine Transform (DCT) -> 13 MFCCs
+            const mfcc = new Array(this.numCoeffs);
+            for (let c = 0; c < this.numCoeffs; c++) {
+              const dctRow = this.dctMatrix[c];
+              let val = 0;
+              for (let m = 0; m < this.numFilters; m++) {
+                val += melEnergies[m] * dctRow[m];
+              }
+              // Round to 3 decimal places to keep serialized JSON compact
+              mfcc[c] = Math.round(val * 1000) / 1000;
+            }
+            frames.push(mfcc);
+          }
+
+          if (frames.length === 0) return [];
+
+          // 6. Cepstral Mean Normalization (CMN) across utterance for channel/mic invariance
+          const means = new Float32Array(this.numCoeffs);
+          for (let f = 0; f < frames.length; f++) {
+            for (let c = 0; c < this.numCoeffs; c++) {
+              means[c] += frames[f][c];
+            }
+          }
+          for (let c = 0; c < this.numCoeffs; c++) {
+            means[c] /= frames.length;
+          }
+
+          for (let f = 0; f < frames.length; f++) {
+            for (let c = 0; c < this.numCoeffs; c++) {
+              frames[f][c] = Math.round((frames[f][c] - means[c]) * 1000) / 1000;
+            }
+          }
+
+          return frames;
+        }
+      }
+
+      /* ======================================================================
+         MODULE 4: DYNAMIC TIME WARPING (DTW) ACOUSTIC MATCHER
+         ====================================================================== */
+      class DTWMatcher {
+        /**
+         * Computes Euclidean distance between two MFCC vectors (ignoring c0 energy drift slightly)
+         */
+        static frameDistance(v1, v2) {
+          let sum = 0;
+          for (let i = 1; i < v1.length; i++) {
+            const d = v1[i] - v2[i];
+            sum += d * d;
+          }
+          // Include c0 with lower weight (0.25)
+          const d0 = v1[0] - v2[0];
+          sum += 0.25 * d0 * d0;
+          return Math.sqrt(sum);
+        }
+
+        /**
+         * Normalized Dynamic Time Warping with Sakoe-Chiba band constraint
+         */
+        static computeDistance(seqA, seqB) {
+          const n = seqA.length;
+          const m = seqB.length;
+          if (n === 0 || m === 0) return Infinity;
+
+          // Reject extreme length mismatches (> 3.2x ratio)
+          const ratio = Math.max(n / m, m / n);
+          if (ratio > 3.2) return Infinity;
+
+          const band = Math.max(Math.abs(n - m) + 4, Math.floor(Math.max(n, m) * 0.35));
+          const INF = 1e9;
+
+          let prev = new Float32Array(m + 1).fill(INF);
+          let curr = new Float32Array(m + 1).fill(INF);
+          prev[0] = 0;
+
+          for (let i = 1; i <= n; i++) {
+            curr.fill(INF);
+            const jCenter = Math.round((i * m) / n);
+            const jStart = Math.max(1, jCenter - band);
+            const jEnd = Math.min(m, jCenter + band);
+
+            for (let j = jStart; j <= jEnd; j++) {
+              const cost = this.frameDistance(seqA[i - 1], seqB[j - 1]);
+              const minPrev = Math.min(prev[j], curr[j - 1], prev[j - 1]);
+              curr[j] = cost + minPrev;
+            }
+            [prev, curr] = [curr, prev];
+          }
+
+          return prev[m] / (n + m);
+        }
+
+        /**
+         * Matches query MFCC sequence against all stored word templates.
+         * Returns sorted array of { word, confidence (0-100), rawDistance }
+         */
+        static matchWord(queryMFCC, voiceSamplesMap, dictionary) {
+          if (!queryMFCC || queryMFCC.length < 4) return [];
+
+          const freqMap = new Map();
+          for (const item of dictionary) {
+            freqMap.set(item.word, item.freq || 1);
+          }
+
+          const results = [];
+          for (const [word, samples] of Object.entries(voiceSamplesMap)) {
+            if (!samples || samples.length === 0) continue;
+
+            let bestDist = Infinity;
+            let avgDist = 0;
+            let validCount = 0;
+
+            for (const sample of samples) {
+              if (!sample || !sample.mfcc) continue;
+              const d = this.computeDistance(queryMFCC, sample.mfcc);
+              if (d < Infinity) {
+                if (d < bestDist) bestDist = d;
+                avgDist += d;
+                validCount++;
+              }
+            }
+
+            if (validCount === 0) continue;
+            avgDist /= validCount;
+
+            // Blend best sample distance (70%) and mean template distance (30%)
+            const blendedDist = 0.7 * bestDist + 0.3 * avgDist;
+
+            // Convert DTW distance to intuitive 0..100% similarity score
+            const baseSimilarity = Math.max(0, Math.min(100, 100 * Math.exp(-blendedDist / 16)));
+
+            // Subtle frequency prior bonus (up to +4.5%)
+            const freq = freqMap.get(word) || 1;
+            const freqBonus = Math.min(4.5, Math.log10(freq + 1) * 1.6);
+
+            const finalScore = Math.min(99.9, Math.round((baseSimilarity + freqBonus) * 10) / 10);
+            results.push({
+              word,
+              confidence: finalScore,
+              rawDistance: Math.round(blendedDist * 100) / 100
+            });
+          }
+
+          results.sort((a, b) => b.confidence - a.confidence);
+          return results;
+        }
+      }
+
+      /* ======================================================================
+         MODULE 5: WEB AUDIO ENGINE (Capture, VAD, Resampling & WAV Codec)
+         ====================================================================== */
+      class AudioEngine {
+        constructor(mfccExtractor) {
+          this.mfccExtractor = mfccExtractor;
+          this.audioCtx = null;
+          this.mediaStream = null;
+          this.sourceNode = null;
+          this.processorNode = null;
+          this.mode = "idle"; // "idle" | "training" | "dictation"
+
+          // Callbacks
+          this.onLevel = null;
+          this.onWaveform = null;
+          this.onVadState = null;
+          this.onUtteranceCaptured = null;
+          this.onTrainingComplete = null;
+
+          // VAD & Buffering State
+          this.vadThreshold = 0.025;
+          this.vadPauseMs = 600;
+          this.isSpeaking = false;
+          this.silenceMs = 0;
+          this.speechChunks = [];
+          this.preRollChunks = [];
+          this.trainingChunks = [];
+          this.trainingTargetMs = 2200;
+          this.trainingElapsedMs = 0;
+        }
+
+        async _ensureMicStream() {
+          if (!this.audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            this.audioCtx = new AudioContextClass();
+          }
+          if (this.audioCtx.state === "suspended") {
+            await this.audioCtx.resume();
+          }
+          if (!this.mediaStream) {
+            this.mediaStream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              }
+            });
+          }
+          if (!this.sourceNode) {
+            this.sourceNode = this.audioCtx.createMediaStreamSource(this.mediaStream);
+            this.processorNode = this.audioCtx.createScriptProcessor(2048, 1, 1);
+            this.processorNode.onaudioprocess = (ev) => this._processAudioBuffer(ev);
+            this.sourceNode.connect(this.processorNode);
+            this.processorNode.connect(this.audioCtx.destination);
+          }
+        }
+
+        async startDictation() {
+          await this._ensureMicStream();
+          this.mode = "dictation";
+          this.isSpeaking = false;
+          this.silenceMs = 0;
+          this.speechChunks = [];
+          this.preRollChunks = [];
+          if (this.onVadState) this.onVadState("listening", "Listening for Yiddish speech...");
+        }
+
+        async startTrainingRecord(durationMs = 2000) {
+          await this._ensureMicStream();
+          this.mode = "training";
+          this.trainingChunks = [];
+          this.trainingElapsedMs = 0;
+          this.trainingTargetMs = durationMs;
+        }
+
+        stop() {
+          this.mode = "idle";
+          this.isSpeaking = false;
+          this.speechChunks = [];
+          this.trainingChunks = [];
+          if (this.onLevel) this.onLevel(0);
+          if (this.onVadState) this.onVadState("ready", "Ready");
+        }
+
+        _processAudioBuffer(ev) {
+          if (this.mode === "idle") return;
+          const input = ev.inputBuffer.getChannelData(0);
+          const chunk = new Float32Array(input.length);
+          chunk.set(input);
+
+          // Calculate RMS energy
+          let sumSq = 0;
+          for (let i = 0; i < chunk.length; i++) {
+            sumSq += chunk[i] * chunk[i];
+          }
+          const rms = Math.sqrt(sumSq / chunk.length);
+          const chunkDurationMs = (chunk.length / this.audioCtx.sampleRate) * 1000;
+
+          if (this.onLevel) this.onLevel(rms);
+          if (this.onWaveform) this.onWaveform(chunk);
+
+          if (this.mode === "training") {
+            this.trainingChunks.push(chunk);
+            this.trainingElapsedMs += chunkDurationMs;
+            if (this.trainingElapsedMs >= this.trainingTargetMs) {
+              this.mode = "idle";
+              const merged = this._mergeChunks(this.trainingChunks);
+              const processed = this._finalizeUtterance(merged, this.audioCtx.sampleRate);
+              if (this.onTrainingComplete) this.onTrainingComplete(processed);
+            }
+            return;
+          }
+
+          if (this.mode === "dictation") {
+            if (rms >= this.vadThreshold) {
+              if (!this.isSpeaking) {
+                this.isSpeaking = true;
+                // Include 2 pre-roll chunks so initial consonant isn't clipped
+                this.speechChunks = [...this.preRollChunks];
+                if (this.onVadState) this.onVadState("speech", "Speech detected...");
+              }
+              this.silenceMs = 0;
+              this.speechChunks.push(chunk);
+            } else {
+              if (this.isSpeaking) {
+                this.speechChunks.push(chunk);
+                this.silenceMs += chunkDurationMs;
+                if (this.silenceMs >= this.vadPauseMs) {
+                  this.isSpeaking = false;
+                  this.silenceMs = 0;
+                  const captured = this._mergeChunks(this.speechChunks);
+                  this.speechChunks = [];
+                  if (this.onVadState) this.onVadState("processing", "Matching speech...");
+                  const processed = this._finalizeUtterance(captured, this.audioCtx.sampleRate);
+                  if (this.onUtteranceCaptured) this.onUtteranceCaptured(processed);
+                  if (this.mode === "dictation" && this.onVadState) {
+                    this.onVadState("listening", "Listening for Yiddish speech...");
+                  }
+                }
+              } else {
+                this.preRollChunks.push(chunk);
+                if (this.preRollChunks.length > 3) this.preRollChunks.shift();
+              }
+            }
+          }
+        }
+
+        _mergeChunks(chunks) {
+          let totalLen = 0;
+          for (const c of chunks) totalLen += c.length;
+          const out = new Float32Array(totalLen);
+          let offset = 0;
+          for (const c of chunks) {
+            out.set(c, offset);
+            offset += c.length;
+          }
+          return out;
+        }
+
+        _resampleLinear(samples, srcRate, dstRate) {
+          if (srcRate === dstRate) return samples;
+          const ratio = srcRate / dstRate;
+          const newLen = Math.round(samples.length / ratio);
+          const out = new Float32Array(newLen);
+          for (let i = 0; i < newLen; i++) {
+            const pos = i * ratio;
+            const idx = Math.floor(pos);
+            const frac = pos - idx;
+            const s0 = samples[idx] || 0;
+            const s1 = samples[idx + 1] !== undefined ? samples[idx + 1] : s0;
+            out[i] = s0 + frac * (s1 - s0);
+          }
+          return out;
+        }
+
+        _trimSilence(samples, sampleRate) {
+          const frameLen = Math.floor(sampleRate * 0.02); // 20ms
+          let maxRms = 0;
+          for (let i = 0; i + frameLen <= samples.length; i += frameLen) {
+            let sum = 0;
+            for (let j = 0; j < frameLen; j++) sum += samples[i + j] * samples[i + j];
+            const rms = Math.sqrt(sum / frameLen);
+            if (rms > maxRms) maxRms = rms;
+          }
+
+          const thresh = Math.max(0.008, maxRms * 0.14);
+          let startIdx = 0;
+          let endIdx = samples.length;
+
+          for (let i = 0; i + frameLen <= samples.length; i += frameLen) {
+            let sum = 0;
+            for (let j = 0; j < frameLen; j++) sum += samples[i + j] * samples[i + j];
+            if (Math.sqrt(sum / frameLen) >= thresh) {
+              startIdx = Math.max(0, i - frameLen * 2);
+              break;
+            }
+          }
+
+          for (let i = samples.length - frameLen; i >= 0; i -= frameLen) {
+            let sum = 0;
+            for (let j = 0; j < frameLen; j++) sum += samples[i + j] * samples[i + j];
+            if (Math.sqrt(sum / frameLen) >= thresh) {
+              endIdx = Math.min(samples.length, i + frameLen * 3);
+              break;
+            }
+          }
+
+          if (endIdx <= startIdx + frameLen * 2) return samples;
+          return samples.slice(startIdx, endIdx);
+        }
+
+        _finalizeUtterance(rawSamples, srcSampleRate) {
+          // Resample to 16kHz for MFCC extraction
+          const pcm16k = this._resampleLinear(rawSamples, srcSampleRate, 16000);
+          const trimmed16k = this._trimSilence(pcm16k, 16000);
+
+          // Normalize amplitude
+          let peak = 0;
+          for (let i = 0; i < trimmed16k.length; i++) {
+            const a = Math.abs(trimmed16k[i]);
+            if (a > peak) peak = a;
+          }
+          if (peak > 0.001) {
+            const gain = 0.9 / peak;
+            for (let i = 0; i < trimmed16k.length; i++) trimmed16k[i] *= gain;
+          }
+
+          const mfcc = this.mfccExtractor.extract(trimmed16k);
+
+          // Downsample to 8kHz for compact base64 WAV playback storage
+          const pcm8k = this._resampleLinear(trimmed16k, 16000, 8000);
+          const wavBase64 = this._encodeWavBase64(pcm8k, 8000);
+          const durationMs = Math.round((trimmed16k.length / 16000) * 1000);
+
+          // Create compact 32-point envelope for mini waveform UI
+          const envelope = [];
+          const step = Math.max(1, Math.floor(pcm8k.length / 32));
+          for (let i = 0; i < 32; i++) {
+            let m = 0;
+            for (let j = 0; j < step && i * step + j < pcm8k.length; j++) {
+              const v = Math.abs(pcm8k[i * step + j]);
+              if (v > m) m = v;
+            }
+            envelope.push(Math.round(m * 100) / 100);
+          }
+
+          return { mfcc, wavBase64, durationMs, envelope };
+        }
+
+        _encodeWavBase64(samples, sampleRate) {
+          const numSamples = samples.length;
+          const buffer = new ArrayBuffer(44 + numSamples * 2);
+          const view = new DataView(buffer);
+
+          const writeStr = (offset, str) => {
+            for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+          };
+
+          writeStr(0, "RIFF");
+          view.setUint32(4, 36 + numSamples * 2, true);
+          writeStr(8, "WAVE");
+          writeStr(12, "fmt ");
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true); // PCM
+          view.setUint16(22, 1, true); // Mono
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * 2, true);
+          view.setUint16(32, 2, true);
+          view.setUint16(34, 16, true);
+          writeStr(36, "data");
+          view.setUint32(40, numSamples * 2, true);
+
+          let offset = 44;
+          for (let i = 0; i < numSamples; i++) {
+            const s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+            offset += 2;
+          }
+
+          const bytes = new Uint8Array(buffer);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          return btoa(binary);
+        }
+
+        playWavBase64(wavBase64) {
+          if (!wavBase64) return;
+          const audio = new Audio("data:audio/wav;base64," + wavBase64);
+          audio.play().catch((e) => console.warn("Audio playback failed:", e));
+        }
+      }
+
+      /* ======================================================================
+         MODULE 6: PREDICTION & FREQUENCY ENGINE
+         ====================================================================== */
+      class PredictionEngine {
+        constructor(store) {
+          this.store = store;
+        }
+
+        /**
+         * Extracts the active Yiddish word prefix right before the caret
+         */
+        getCurrentWordPrefix(text, caretPos) {
+          const before = text.slice(0, caretPos);
+          const match = before.match(/([\u0590-\u05FF\uFB1D-\uFB4F׳״]+)$/);
+          return match ? match[1] : "";
+        }
+
+        /**
+         * Returns top 5 ranked predictions for the current prefix
+         */
+        getSuggestions(prefix) {
+          const dict = this.store.state.dictionary;
+          let matches;
+
+          if (!prefix) {
+            matches = [...dict];
+          } else {
+            matches = dict.filter((item) => item.word.startsWith(prefix));
+          }
+
+          matches.sort((a, b) => (b.freq || 0) - (a.freq || 0));
+          return matches.slice(0, 5);
+        }
+
+        /**
+         * Increments frequency of a typed, predicted, or dictated Yiddish word
+         */
+        recordWordUsage(rawWord, boost = 3) {
+          const clean = rawWord.replace(/^[^\u0590-\u05FF\uFB1D-\uFB4F]+|[^\u0590-\u05FF\uFB1D-\uFB4F]+$/g, "").trim();
+          if (!clean || clean.length < 1) return false;
+
+          const existing = this.store.state.dictionary.find((d) => d.word === clean);
+          if (existing) {
+            existing.freq = (existing.freq || 1) + boost;
+          } else {
+            this.store.state.dictionary.push({ word: clean, freq: 10 + boost });
+          }
+          this.store.saveState();
+          return true;
+        }
+      }
+
+      /* ======================================================================
+         MODULE 7: KEYBOARD ENGINE (Layout Rendering, Physical Mapping & Designer)
+         ====================================================================== */
+      class KeyboardEngine {
+        constructor(store, onKeyOutput) {
+          this.store = store;
+          this.onKeyOutput = onKeyOutput;
+          this.shiftActive = false;
+          this.selectedKeyCoords = null; // { rowIdx, keyIdx }
+
+          // Physical QWERTY -> Yiddish phonetic/standard map
+          this.physicalMap = {
+            q: "ק", w: "ר", e: "א", r: "ט", t: "ו", y: "ן", u: "ם", i: "פ", o: "פֿ", p: "ב",
+            a: "ש", s: "ד", d: "ג", f: "כ", g: "ע", h: "י", j: "ח", k: "ל", l: "ך", ";": "ף",
+            z: "ז", x: "ס", c: "וו", v: "ה", b: "נ", n: "מ", m: "צ", ",": "ת", ".": "ץ",
+            Q: "1", W: "2", E: "אַ", R: "אָ", T: "וּ", Y: "5", U: "6", I: "פּ", O: "9", P: "בֿ",
+            A: "שׂ", S: "־", D: "״", F: "כּ", G: "׳", H: "יִ", J: "7", K: "8", L: ":",
+            Z: "!", X: "?", C: "וי", V: "ײַ", B: "יי"
+          };
+        }
+
+        applyThemeStyles() {
+          const kb = this.store.state.keyboard;
+          const root = document.documentElement;
+          root.style.setProperty("--kb-bg", kb.colors.kbBg);
+          root.style.setProperty("--kb-key-bg", kb.colors.keyBg);
+          root.style.setProperty("--kb-key-text", kb.colors.keyText);
+          root.style.setProperty("--kb-key-special-bg", kb.colors.keySpecial);
+          root.style.setProperty("--kb-key-border", kb.colors.keyBorder || "#c7c1b4");
+          root.style.setProperty("--kb-font-size", kb.fontSize + "px");
+          root.style.setProperty("--kb-gap", kb.gap + "px");
+        }
+
+        renderKeyboard(containerEl) {
+          this.applyThemeStyles();
+          containerEl.innerHTML = "";
+          const rows = this.store.state.keyboard.rows;
+
+          rows.forEach((row) => {
+            const rowEl = document.createElement("div");
+            rowEl.className = "kb-row";
+
+            row.forEach((keyObj) => {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "kb-key";
+              btn.style.setProperty("--key-flex", keyObj.width || 1);
+
+              const isSpecial = ["backspace", "enter", "shift", "space"].includes(keyObj.type);
+              if (isSpecial) btn.classList.add("special");
+              if (keyObj.type === "shift" && this.shiftActive) btn.classList.add("shift-active");
+
+              const activeVal = this.shiftActive ? (keyObj.shift || keyObj.primary) : keyObj.primary;
+              const displayLabel = keyObj.label || activeVal;
+
+              const mainSpan = document.createElement("span");
+              mainSpan.className = "kb-key-main";
+              mainSpan.textContent = displayLabel;
+              btn.appendChild(mainSpan);
+
+              if (!isSpecial && keyObj.shift && keyObj.shift !== keyObj.primary) {
+                const subSpan = document.createElement("span");
+                subSpan.className = "kb-key-sub";
+                subSpan.textContent = this.shiftActive ? keyObj.primary : keyObj.shift;
+                btn.appendChild(subSpan);
+              }
+
+              if (!isSpecial && keyObj.latin) {
+                const latSpan = document.createElement("span");
+                latSpan.className = "kb-key-latin";
+                latSpan.textContent = keyObj.latin.toUpperCase();
+                btn.appendChild(latSpan);
+              }
+
+              btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                this._handleKeyPress(keyObj, containerEl);
+              });
+
+              rowEl.appendChild(btn);
+            });
+
+            containerEl.appendChild(rowEl);
+          });
+        }
+
+        _handleKeyPress(keyObj, containerEl) {
+          if (keyObj.type === "shift") {
+            this.shiftActive = !this.shiftActive;
+            this.renderKeyboard(containerEl);
+            return;
+          }
+
+          if (keyObj.type === "backspace") {
+            this.onKeyOutput({ action: "backspace" });
+            return;
+          }
+
+          if (keyObj.type === "enter") {
+            this.onKeyOutput({ action: "text", value: "\n" });
+            return;
+          }
+
+          const output = this.shiftActive ? (keyObj.shift || keyObj.primary) : keyObj.primary;
+          this.onKeyOutput({ action: "text", value: output });
+
+          if (this.shiftActive) {
+            this.shiftActive = false;
+            this.renderKeyboard(containerEl);
+          }
+        }
+
+        mapPhysicalKey(keyChar) {
+          return this.physicalMap[keyChar] || null;
+        }
+      }
+
+      /* ======================================================================
+         MODULE 8: MAIN UI CONTROLLER & SELF-EXPORT BUILDER
+         ====================================================================== */
+      class AppUI {
+        constructor() {
+          this.store = new StoreManager();
+          this.mfcc = new MFCCExtractor({ sampleRate: 16000 });
+          this.audio = new AudioEngine(this.mfcc);
+          this.predictor = new PredictionEngine(this.store);
+          this.keyboard = new KeyboardEngine(this.store, (evt) => this._onVirtualKey(evt));
+
+          this.selectedTrainingWord = "שלום";
+          this.dictSearchQuery = "";
+          this.dictFilterMode = "all";
+          this.isLiveDictating = false;
+          this.recordingSlotIdx = null;
+        }
+
+        async boot() {
+          await this.store.init();
+
+          // Sync acoustic settings
+          this.audio.vadThreshold = this.store.state.settings.vadThreshold;
+          this.audio.vadPauseMs = this.store.state.settings.vadPauseMs;
+
+          // Ensure selectedTrainingWord exists in dictionary
+          if (!this.store.state.dictionary.some((d) => d.word === this.selectedTrainingWord)) {
+            this.selectedTrainingWord = this.store.state.dictionary[0]?.word || "שלום";
+          }
+
+          this._bindNavigation();
+          this._bindEditorAndKeyboard();
+          this._bindVoiceDictation();
+          this._bindDictionaryAndTrainer();
+          this._bindKeyboardDesigner();
+          this._bindExportAndBackup();
+
+          // Initial renders
+          this.keyboard.renderKeyboard(document.getElementById("onscreen-keyboard"));
+          this._updatePredictions();
+          this._renderDictionaryTable();
+          this._renderTrainerPanel();
+          this._renderDesignerCanvas();
+          this._updateExportStats();
+        }
+
+        showToast(msg, type = "info") {
+          const container = document.getElementById("toast-container");
+          const el = document.createElement("div");
+          el.className = `toast ${type}`;
+          el.textContent = msg;
+          container.appendChild(el);
+          setTimeout(() => {
+            el.style.opacity = "0";
+            setTimeout(() => el.remove(), 220);
+          }, 3000);
+        }
+
+        /* --------------------------------------------------------------------
+           NAVIGATION TABS
+           -------------------------------------------------------------------- */
+        _bindNavigation() {
+          const tabBtns = document.querySelectorAll(".tab-btn");
+          const panels = document.querySelectorAll(".tab-panel");
+
+          tabBtns.forEach((btn) => {
+            btn.addEventListener("click", () => {
+              // Stop active mic streams when switching tabs for clean UX
+              if (this.isLiveDictating) this._toggleLiveDictation(false);
+
+              tabBtns.forEach((b) => b.classList.remove("active"));
+              panels.forEach((p) => p.classList.remove("active"));
+
+              btn.classList.add("active");
+              const targetId = btn.getAttribute("data-tab");
+              document.getElementById(targetId).classList.add("active");
+
+              if (targetId === "tab-typing") {
+                this.keyboard.renderKeyboard(document.getElementById("onscreen-keyboard"));
+                this._updatePredictions();
+              } else if (targetId === "tab-trainer") {
+                this._renderDictionaryTable();
+                this._renderTrainerPanel();
+              } else if (targetId === "tab-designer") {
+                this._renderDesignerCanvas();
+              } else if (targetId === "tab-export") {
+                this._updateExportStats();
+              }
+            });
+          });
+        }
+
+        /* --------------------------------------------------------------------
+           TAB 1: EDITOR, PHYSICAL KEYBOARD & PREDICTIONS
+           -------------------------------------------------------------------- */
+        _bindEditorAndKeyboard() {
+          const editor = document.getElementById("yiddish-editor");
+          const chkPhysical = document.getElementById("chk-physical-map");
+          chkPhysical.checked = !!this.store.state.settings.physicalMap;
+
+          chkPhysical.addEventListener("change", () => {
+            this.store.state.settings.physicalMap = chkPhysical.checked;
+            this.store.saveState();
+          });
+
+          // Handle physical keyboard Yiddish transliteration & word completion tracking
+          editor.addEventListener("keydown", (e) => {
+            // Tab accepts top autocomplete suggestion
+            if (e.key === "Tab") {
+              const prefix = this.predictor.getCurrentWordPrefix(editor.value, editor.selectionStart);
+              const top = this.predictor.getSuggestions(prefix)[0];
+              if (top) {
+                e.preventDefault();
+                this._applyPrediction(top.word);
+              }
+              return;
+            }
+
+            // Detect word completion on Space or Enter
+            if (e.key === " " || e.key === "Enter") {
+              const prefix = this.predictor.getCurrentWordPrefix(editor.value, editor.selectionStart);
+              if (prefix) {
+                this.predictor.recordWordUsage(prefix, 2);
+              }
+            }
+
+            if (!chkPhysical.checked || e.ctrlKey || e.metaKey || e.altKey) return;
+
+            if (e.key.length === 1) {
+              const mapped = this.keyboard.mapPhysicalKey(e.key);
+              if (mapped) {
+                e.preventDefault();
+                this._insertTextAtCaret(editor, mapped);
+              }
+            }
+          });
+
+          editor.addEventListener("input", () => {
+            this._updateEditorStats();
+            this._updatePredictions();
+          });
+
+          editor.addEventListener("click", () => this._updatePredictions());
+
+          // Editor action buttons
+          document.getElementById("btn-copy-text").addEventListener("click", () => {
+            editor.select();
+            document.execCommand("copy");
+            this.showToast("Yiddish text copied to clipboard!", "success");
+          });
+
+          document.getElementById("btn-clear-text").addEventListener("click", () => {
+            editor.value = "";
+            this._updateEditorStats();
+            this._updatePredictions();
+            editor.focus();
+          });
+
+          document.getElementById("btn-download-txt").addEventListener("click", () => {
+            const blob = new Blob(["\uFEFF" + editor.value], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "yiddish-text.txt";
+            a.click();
+            URL.revokeObjectURL(url);
+          });
+        }
+
+        _onVirtualKey(evt) {
+          const editor = document.getElementById("yiddish-editor");
+          editor.focus();
+
+          if (evt.action === "backspace") {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            if (start !== end) {
+              editor.value = editor.value.slice(0, start) + editor.value.slice(end);
+              editor.selectionStart = editor.selectionEnd = start;
+            } else if (start > 0) {
+              editor.value = editor.value.slice(0, start - 1) + editor.value.slice(start);
+              editor.selectionStart = editor.selectionEnd = start - 1;
+            }
+          } else if (evt.action === "text") {
+            if (evt.value === " " || evt.value === "\n" || /^[.,!?;:]$/.test(evt.value)) {
+              const prefix = this.predictor.getCurrentWordPrefix(editor.value, editor.selectionStart);
+              if (prefix) this.predictor.recordWordUsage(prefix, 2);
+            }
+            this._insertTextAtCaret(editor, evt.value);
+          }
+
+          this._updateEditorStats();
+          this._updatePredictions();
+        }
+
+        _insertTextAtCaret(textarea, text) {
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+          const newPos = start + text.length;
+          textarea.selectionStart = textarea.selectionEnd = newPos;
+          this._updateEditorStats();
+          this._updatePredictions();
+        }
+
+        _updateEditorStats() {
+          const val = document.getElementById("yiddish-editor").value;
+          const trimmed = val.trim();
+          const words = trimmed ? trimmed.split(/\s+/).length : 0;
+          document.getElementById("editor-stats").textContent = `${words} words · ${val.length} characters`;
+        }
+
+        _updatePredictions() {
+          const editor = document.getElementById("yiddish-editor");
+          const prefix = this.predictor.getCurrentWordPrefix(editor.value, editor.selectionStart);
+          const suggestions = this.predictor.getSuggestions(prefix);
+
+          const listEl = document.getElementById("prediction-list");
+          listEl.innerHTML = "";
+
+          if (suggestions.length === 0) {
+            listEl.innerHTML = `<span style="font-size:0.8rem;color:var(--text-secondary);direction:ltr;">No matching words yet</span>`;
+            return;
+          }
+
+          suggestions.forEach((item, idx) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "prediction-pill" + (idx === 0 ? " top-match" : "");
+            btn.innerHTML = `<span>${this._escapeHtml(item.word)}</span><span class="freq-tag">${item.freq}</span>`;
+            btn.addEventListener("click", () => this._applyPrediction(item.word));
+            listEl.appendChild(btn);
+          });
+        }
+
+        _applyPrediction(word) {
+          const editor = document.getElementById("yiddish-editor");
+          const caret = editor.selectionStart;
+          const prefix = this.predictor.getCurrentWordPrefix(editor.value, caret);
+          const start = caret - prefix.length;
+
+          editor.value = editor.value.slice(0, start) + word + " " + editor.value.slice(caret);
+          const nextPos = start + word.length + 1;
+          editor.selectionStart = editor.selectionEnd = nextPos;
+          editor.focus();
+
+          this.predictor.recordWordUsage(word, 4);
+          this._updateEditorStats();
+          this._updatePredictions();
+        }
+
+        /* --------------------------------------------------------------------
+           LIVE VOICE DICTATION MODE (VAD + DTW)
+           -------------------------------------------------------------------- */
+        _bindVoiceDictation() {
+          const micBtn = document.getElementById("btn-live-mic");
+          const pulseRing = document.getElementById("mic-pulse-ring");
+          const badge = document.getElementById("vad-status-badge");
+          const subtext = document.getElementById("vad-subtext");
+          const candBox = document.getElementById("dictation-candidates");
+
+          micBtn.addEventListener("click", () => {
+            this._toggleLiveDictation(!this.isLiveDictating);
+          });
+
+          this.audio.onLevel = (rms) => {
+            if (this.isLiveDictating) {
+              const scale = 1 + Math.min(0.65, rms * 9);
+              pulseRing.style.opacity = rms > 0.005 ? "1" : "0";
+              pulseRing.style.transform = `scale(${scale.toFixed(2)})`;
+            } else {
+              pulseRing.style.opacity = "0";
+            }
+
+            // Update trainer VU bar if in training tab
+            const vuFill = document.getElementById("trainer-vu-fill");
+            if (vuFill) {
+              vuFill.style.width = Math.min(100, Math.round(rms * 450)) + "%";
+            }
+          };
+
+          this.audio.onVadState = (state, message) => {
+            subtext.textContent = message;
+            micBtn.classList.remove("listening", "speech-active");
+
+            if (state === "listening") {
+              badge.className = "badge badge-red";
+              badge.textContent = "Listening";
+              micBtn.classList.add("listening");
+            } else if (state === "speech") {
+              badge.className = "badge badge-green";
+              badge.textContent = "Speech Detected";
+              micBtn.classList.add("speech-active");
+            } else if (state === "processing") {
+              badge.className = "badge badge-amber";
+              badge.textContent = "Processing";
+            } else {
+              badge.className = "badge badge-neutral";
+              badge.textContent = "Ready";
+            }
+          };
+
+          this.audio.onUtteranceCaptured = (processed) => {
+            const trainedCount = Object.keys(this.store.voiceSamples).length;
+            if (trainedCount === 0) {
+              subtext.textContent = "No trained words yet! Go to 'Dictionary & Voice Trainer' to record samples.";
+              return;
+            }
+
+            const matches = DTWMatcher.matchWord(
+              processed.mfcc,
+              this.store.voiceSamples,
+              this.store.state.dictionary
+            );
+
+            candBox.innerHTML = "";
+            if (matches.length === 0) {
+              subtext.textContent = "Could not match utterance. Try speaking clearly.";
+              return;
+            }
+
+            // Render top 3 runner-up chips so user can click an alternative if desired
+            matches.slice(0, 3).forEach((m, idx) => {
+              const chip = document.createElement("button");
+              chip.type = "button";
+              chip.className = "candidate-chip";
+              chip.innerHTML = `<span class="yi-text" style="font-weight:700;font-size:1rem;">${this._escapeHtml(m.word)}</span> <span style="font-size:0.72rem;color:#64748b;">${m.confidence}%</span>`;
+              chip.title = "Click to insert/replace with this word";
+              chip.addEventListener("click", () => {
+                const editor = document.getElementById("yiddish-editor");
+                this._insertTextAtCaret(editor, m.word + " ");
+                this.predictor.recordWordUsage(m.word, 4);
+              });
+              candBox.appendChild(chip);
+            });
+
+            const best = matches[0];
+            const strictness = this.store.state.settings.dtwStrictness;
+
+            if (best.confidence >= strictness) {
+              const editor = document.getElementById("yiddish-editor");
+              this._insertTextAtCaret(editor, best.word + " ");
+              this.predictor.recordWordUsage(best.word, 5);
+              subtext.textContent = `Inserted "${best.word}" (${best.confidence}% match)`;
+            } else {
+              subtext.textContent = `Low confidence (${best.word}: ${best.confidence}% < ${strictness}%). Click chip to insert.`;
+            }
+          };
+        }
+
+        async _toggleLiveDictation(enable) {
+          if (enable) {
+            try {
+              await this.audio.startDictation();
+              this.isLiveDictating = true;
+            } catch (err) {
+              this.isLiveDictating = false;
+              document.getElementById("vad-status-badge").className = "badge badge-red";
+              document.getElementById("vad-status-badge").textContent = "Mic Error";
+              document.getElementById("vad-subtext").textContent =
+                "Microphone permission denied or unavailable.";
+              this.showToast("Microphone access denied or unavailable.", "error");
+            }
+          } else {
+            this.isLiveDictating = false;
+            this.audio.stop();
+          }
+        }
+
+        /* --------------------------------------------------------------------
+           TAB 2: DICTIONARY MANAGER & VOICE TRAINING STUDIO
+           -------------------------------------------------------------------- */
+        _bindDictionaryAndTrainer() {
+          // Add new word
+          document.getElementById("form-add-word").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const wordInput = document.getElementById("input-new-word");
+            const freqInput = document.getElementById("input-new-freq");
+            const word = wordInput.value.trim();
+            const freq = Math.max(1, parseInt(freqInput.value, 10) || 50);
+
+            if (!word) return;
+
+            const existing = this.store.state.dictionary.find((d) => d.word === word);
+            if (existing) {
+              existing.freq = freq;
+              this.showToast(`Updated "${word}" frequency to ${freq}.`, "info");
+            } else {
+              this.store.state.dictionary.push({ word, freq });
+              this.showToast(`Added "${word}" to dictionary.`, "success");
+            }
+
+            this.store.saveState();
+            this.selectedTrainingWord = word;
+            wordInput.value = "";
+            this._renderDictionaryTable();
+            this._renderTrainerPanel();
+            this._updatePredictions();
+          });
+
+          // Search & filter
+          document.getElementById("input-search-dict").addEventListener("input", (e) => {
+            this.dictSearchQuery = e.target.value.trim();
+            this._renderDictionaryTable();
+          });
+
+          document.getElementById("select-dict-filter").addEventListener("change", (e) => {
+            this.dictFilterMode = e.target.value;
+            this._renderDictionaryTable();
+          });
+
+          // Bulk import modal
+          const modal = document.getElementById("modal-bulk-import");
+          document.getElementById("btn-open-bulk-import").addEventListener("click", () => {
+            modal.classList.add("open");
+          });
+          document.getElementById("btn-close-bulk-modal").addEventListener("click", () => modal.classList.remove("open"));
+          document.getElementById("btn-cancel-bulk").addEventListener("click", () => modal.classList.remove("open"));
+
+          document.getElementById("btn-confirm-bulk").addEventListener("click", () => {
+            const raw = document.getElementById("textarea-bulk-words").value;
+            const lines = raw.split(/\r?\n/);
+            let imported = 0;
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              const parts = trimmed.split(/[,\t]+/);
+              const word = parts[0].trim();
+              const freq = parts[1] ? Math.max(1, parseInt(parts[1].trim(), 10) || 40) : 40;
+              if (!word) continue;
+
+              const existing = this.store.state.dictionary.find((d) => d.word === word);
+              if (existing) {
+                existing.freq = Math.max(existing.freq, freq);
+              } else {
+                this.store.state.dictionary.push({ word, freq });
+              }
+              imported++;
+            }
+
+            this.store.saveState();
+            modal.classList.remove("open");
+            document.getElementById("textarea-bulk-words").value = "";
+            this._renderDictionaryTable();
+            this._updatePredictions();
+            this.showToast(`Imported/updated ${imported} Yiddish words.`, "success");
+          });
+
+          // Acoustic sliders
+          const vadThreshRange = document.getElementById("range-vad-thresh");
+          const vadPauseRange = document.getElementById("range-vad-pause");
+          const dtwStrictRange = document.getElementById("range-dtw-thresh");
+
+          vadThreshRange.value = this.store.state.settings.vadThreshold;
+          vadPauseRange.value = this.store.state.settings.vadPauseMs;
+          dtwStrictRange.value = this.store.state.settings.dtwStrictness;
+          document.getElementById("lbl-vad-thresh").textContent = vadThreshRange.value;
+          document.getElementById("lbl-vad-pause").textContent = vadPauseRange.value;
+          document.getElementById("lbl-dtw-thresh").textContent = dtwStrictRange.value;
+
+          vadThreshRange.addEventListener("input", () => {
+            const val = parseFloat(vadThreshRange.value);
+            document.getElementById("lbl-vad-thresh").textContent = val;
+            this.store.state.settings.vadThreshold = val;
+            this.audio.vadThreshold = val;
+            this.store.saveState();
+          });
+
+          vadPauseRange.addEventListener("input", () => {
+            const val = parseInt(vadPauseRange.value, 10);
+            document.getElementById("lbl-vad-pause").textContent = val;
+            this.store.state.settings.vadPauseMs = val;
+            this.audio.vadPauseMs = val;
+            this.store.saveState();
+          });
+
+          dtwStrictRange.addEventListener("input", () => {
+            const val = parseInt(dtwStrictRange.value, 10);
+            document.getElementById("lbl-dtw-thresh").textContent = val;
+            this.store.state.settings.dtwStrictness = val;
+            this.store.saveState();
+          });
+
+          // Real-time oscilloscope waveform renderer for trainer
+          this.audio.onWaveform = (chunk) => {
+            const canvas = document.getElementById("trainer-waveform");
+            if (!canvas || canvas.offsetParent === null) return;
+            const ctx = canvas.getContext("2d");
+            const w = (canvas.width = canvas.clientWidth);
+            const h = (canvas.height = canvas.clientHeight);
+
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            const step = Math.max(1, Math.floor(chunk.length / w));
+            for (let x = 0; x < w; x++) {
+              const sample = chunk[x * step] || 0;
+              const y = (0.5 - sample * 0.45) * h;
+              if (x === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          };
+
+          // Test live match button in trainer
+          document.getElementById("btn-test-match").addEventListener("click", async () => {
+            if (Object.keys(this.store.voiceSamples).length === 0) {
+              this.showToast("Record at least 1 voice sample first!", "error");
+              return;
+            }
+            const statusBadge = document.getElementById("trainer-mic-status");
+            try {
+              statusBadge.className = "badge badge-red";
+              statusBadge.textContent = "Speak Now (2s)...";
+
+              this.audio.onTrainingComplete = (processed) => {
+                statusBadge.className = "badge badge-neutral";
+                statusBadge.textContent = "Mic Idle";
+                const matches = DTWMatcher.matchWord(
+                  processed.mfcc,
+                  this.store.voiceSamples,
+                  this.store.state.dictionary
+                );
+                if (matches.length > 0) {
+                  this.showToast(
+                    `Top Match: "${matches[0].word}" (${matches[0].confidence}% confidence)`,
+                    "success"
+                  );
+                } else {
+                  this.showToast("No clear speech detected.", "error");
+                }
+              };
+
+              await this.audio.startTrainingRecord(2000);
+            } catch (e) {
+              statusBadge.className = "badge badge-red";
+              statusBadge.textContent = "Mic Error";
+              this.showToast("Microphone permission denied.", "error");
+            }
+          });
+        }
+
+        _renderDictionaryTable() {
+          const tbody = document.getElementById("dict-table-body");
+          tbody.innerHTML = "";
+
+          const sorted = [...this.store.state.dictionary].sort((a, b) => (b.freq || 0) - (a.freq || 0));
+
+          const filtered = sorted.filter((item) => {
+            if (this.dictSearchQuery && !item.word.includes(this.dictSearchQuery)) return false;
+            const sampleCount = (this.store.voiceSamples[item.word] || []).length;
+            if (this.dictFilterMode === "trained" && sampleCount === 0) return false;
+            if (this.dictFilterMode === "untrained" && sampleCount > 0) return false;
+            return true;
+          });
+
+          filtered.forEach((item) => {
+            const tr = document.createElement("tr");
+            if (item.word === this.selectedTrainingWord) {
+              tr.classList.add("selected-word-row");
+            }
+
+            const samples = this.store.voiceSamples[item.word] || [];
+
+            // Word cell
+            const tdWord = document.createElement("td");
+            tdWord.className = "dict-word-cell";
+            tdWord.textContent = item.word;
+            tdWord.title = "Click to select for voice training";
+            tdWord.addEventListener("click", () => {
+              this.selectedTrainingWord = item.word;
+              this._renderDictionaryTable();
+              this._renderTrainerPanel();
+            });
+
+            // Frequency editable input
+            const tdFreq = document.createElement("td");
+            tdFreq.style.textAlign = "center";
+            const freqInput = document.createElement("input");
+            freqInput.type = "number";
+            freqInput.className = "freq-input";
+            freqInput.value = item.freq || 1;
+            freqInput.min = 1;
+            freqInput.addEventListener("change", () => {
+              item.freq = Math.max(1, parseInt(freqInput.value, 10) || 1);
+              this.store.saveState();
+              this._updatePredictions();
+            });
+            tdFreq.appendChild(freqInput);
+
+            // Voice sample count badge
+            const tdVoice = document.createElement("td");
+            tdVoice.style.textAlign = "center";
+            const vBadge = document.createElement("span");
+            vBadge.className = samples.length > 0 ? "badge badge-green" : "badge badge-neutral";
+            vBadge.textContent = `${samples.length}/5`;
+            vBadge.style.cursor = "pointer";
+            vBadge.addEventListener("click", () => {
+              this.selectedTrainingWord = item.word;
+              this._renderDictionaryTable();
+              this._renderTrainerPanel();
+            });
+            tdVoice.appendChild(vBadge);
+
+            // Actions
+            const tdAct = document.createElement("td");
+            tdAct.style.textAlign = "right";
+            tdAct.style.whiteSpace = "nowrap";
+
+            const trainBtn = document.createElement("button");
+            trainBtn.className = "btn btn-sm";
+            trainBtn.textContent = "🎙️";
+            trainBtn.title = "Train voice for this word";
+            trainBtn.addEventListener("click", () => {
+              this.selectedTrainingWord = item.word;
+              this._renderDictionaryTable();
+              this._renderTrainerPanel();
+            });
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "btn btn-sm btn-danger";
+            delBtn.style.marginLeft = "4px";
+            delBtn.textContent = "✕";
+            delBtn.title = "Delete word";
+            delBtn.addEventListener("click", () => {
+              this.store.state.dictionary = this.store.state.dictionary.filter((d) => d.word !== item.word);
+              this.store.saveState();
+              this._renderDictionaryTable();
+              this._updatePredictions();
+            });
+
+            tdAct.appendChild(trainBtn);
+            tdAct.appendChild(delBtn);
+
+            tr.appendChild(tdWord);
+            tr.appendChild(tdFreq);
+            tr.appendChild(tdVoice);
+            tr.appendChild(tdAct);
+            tbody.appendChild(tr);
+          });
+        }
+
+        _renderTrainerPanel() {
+          const word = this.selectedTrainingWord;
+          document.getElementById("trainer-selected-word").textContent = word;
+
+          const samples = this.store.voiceSamples[word] || [];
+          document.getElementById("trainer-sample-count-badge").textContent = `${samples.length} / 5 Samples`;
+
+          // Clear canvas idle view
+          const canvas = document.getElementById("trainer-waveform");
+          if (canvas) {
+            const ctx = canvas.getContext("2d");
+            canvas.width = canvas.clientWidth || 400;
+            canvas.height = canvas.clientHeight || 96;
+            ctx.fillStyle = "#0f172a";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#64748b";
+            ctx.font = "13px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Click 'Record' on any slot below and pronounce the word clearly", canvas.width / 2, canvas.height / 2 + 4);
+          }
+
+          const slotsContainer = document.getElementById("sample-slots-container");
+          slotsContainer.innerHTML = "";
+
+          for (let i = 0; i < 5; i++) {
+            const sample = samples[i];
+            const slotEl = document.createElement("div");
+            slotEl.className = "sample-slot" + (sample ? " recorded" : "");
+
+            const infoDiv = document.createElement("div");
+            infoDiv.className = "sample-slot-info";
+            infoDiv.innerHTML = `<strong>Sample #${i + 1}</strong>`;
+
+            if (sample) {
+              const durSpan = document.createElement("span");
+              durSpan.className = "badge badge-green";
+              durSpan.textContent = `${sample.durationMs || 500}ms · ${sample.mfcc?.length || 0} frames`;
+              infoDiv.appendChild(durSpan);
+
+              // Mini waveform preview
+              const miniCanvas = document.createElement("canvas");
+              miniCanvas.className = "mini-wave-canvas";
+              miniCanvas.width = 110;
+              miniCanvas.height = 28;
+              this._drawMiniEnvelope(miniCanvas, sample.envelope || []);
+              infoDiv.appendChild(miniCanvas);
+            } else {
+              const emptySpan = document.createElement("span");
+              emptySpan.style.color = "var(--text-secondary)";
+              emptySpan.textContent = "Empty slot";
+              infoDiv.appendChild(emptySpan);
+            }
+
+            const btnGroup = document.createElement("div");
+            btnGroup.style.display = "flex";
+            btnGroup.style.gap = "0.35rem";
+
+            if (sample && sample.wavBase64) {
+              const playBtn = document.createElement("button");
+              playBtn.className = "btn btn-sm";
+              playBtn.textContent = "▶️ Play";
+              playBtn.addEventListener("click", () => this.audio.playWavBase64(sample.wavBase64));
+              btnGroup.appendChild(playBtn);
+            }
+
+            const recBtn = document.createElement("button");
+            recBtn.className = "btn btn-sm btn-primary";
+            recBtn.textContent = sample ? "🔄 Re-record" : "⏺️ Record";
+            recBtn.addEventListener("click", () => this._recordSampleSlot(word, i, recBtn));
+            btnGroup.appendChild(recBtn);
+
+            if (sample) {
+              const delBtn = document.createElement("button");
+              delBtn.className = "btn btn-sm btn-danger";
+              delBtn.textContent = "🗑️";
+              delBtn.addEventListener("click", async () => {
+                await this.store.deleteVoiceSample(word, i);
+                this._renderTrainerPanel();
+                this._renderDictionaryTable();
+              });
+              btnGroup.appendChild(delBtn);
+            }
+
+            slotEl.appendChild(infoDiv);
+            slotEl.appendChild(btnGroup);
+            slotsContainer.appendChild(slotEl);
+          }
+        }
+
+        _drawMiniEnvelope(canvas, envelope) {
+          const ctx = canvas.getContext("2d");
+          const w = canvas.width;
+          const h = canvas.height;
+          ctx.clearRect(0, 0, w, h);
+          if (!envelope.length) return;
+
+          ctx.fillStyle = "#16a34a";
+          const barW = w / envelope.length;
+          envelope.forEach((amp, idx) => {
+            const barH = Math.max(2, amp * h * 0.9);
+            ctx.fillRect(idx * barW + 1, (h - barH) / 2, Math.max(1, barW - 1.5), barH);
+          });
+        }
+
+        async _recordSampleSlot(word, slotIdx, btnEl) {
+          const statusBadge = document.getElementById("trainer-mic-status");
+          try {
+            btnEl.disabled = true;
+            btnEl.textContent = "🎙️ Recording...";
+            statusBadge.className = "badge badge-red";
+            statusBadge.textContent = "Recording (2.0s)...";
+
+            this.audio.onTrainingComplete = async (processed) => {
+              statusBadge.className = "badge badge-neutral";
+              statusBadge.textContent = "Mic Idle";
+
+              if (!processed.mfcc || processed.mfcc.length < 5) {
+                this.showToast("Recording too quiet or short. Please speak louder.", "error");
+                this._renderTrainerPanel();
+                return;
+              }
+
+              await this.store.saveVoiceSample(word, slotIdx, {
+                id: "smp_" + Date.now(),
+                mfcc: processed.mfcc,
+                wavBase64: processed.wavBase64,
+                durationMs: processed.durationMs,
+                envelope: processed.envelope,
+                createdAt: Date.now()
+              });
+
+              this.showToast(`Saved voice sample #${slotIdx + 1} for "${word}"!`, "success");
+              this._renderTrainerPanel();
+              this._renderDictionaryTable();
+            };
+
+            await this.audio.startTrainingRecord(2000);
+          } catch (e) {
+            statusBadge.className = "badge badge-red";
+            statusBadge.textContent = "Mic Error";
+            btnEl.disabled = false;
+            this.showToast("Microphone permission denied or unavailable.", "error");
+          }
+        }
+
+        /* --------------------------------------------------------------------
+           TAB 3: KEYBOARD DESIGNER / REPROGRAM MODE
+           -------------------------------------------------------------------- */
+        _bindKeyboardDesigner() {
+          const themeSelect = document.getElementById("select-kb-theme");
+          const colorBoard = document.getElementById("color-kb-bg");
+          const colorKey = document.getElementById("color-key-bg");
+          const colorText = document.getElementById("color-key-text");
+          const colorSpecial = document.getElementById("color-key-special");
+          const rangeFont = document.getElementById("range-kb-fontsize");
+          const rangeGap = document.getElementById("range-kb-gap");
+
+          const kb = this.store.state.keyboard;
+          themeSelect.value = kb.theme || "parchment";
+          colorBoard.value = kb.colors.kbBg;
+          colorKey.value = kb.colors.keyBg;
+          colorText.value = kb.colors.keyText;
+          colorSpecial.value = kb.colors.keySpecial;
+          rangeFont.value = kb.fontSize;
+          rangeGap.value = kb.gap;
+          document.getElementById("lbl-kb-fontsize").textContent = kb.fontSize;
+          document.getElementById("lbl-kb-gap").textContent = kb.gap;
+
+          themeSelect.addEventListener("change", () => {
+            const preset = KEYBOARD_THEMES[themeSelect.value];
+            kb.theme = themeSelect.value;
+            if (preset) {
+              kb.colors = { ...preset };
+              colorBoard.value = preset.kbBg;
+              colorKey.value = preset.keyBg;
+              colorText.value = preset.keyText;
+              colorSpecial.value = preset.keySpecial;
+            }
+            this.store.saveState();
+            this.keyboard.applyThemeStyles();
+            this._renderDesignerCanvas();
+          });
+
+          const syncCustomColors = () => {
+            kb.theme = "custom";
+            themeSelect.value = "custom";
+            kb.colors.kbBg = colorBoard.value;
+            kb.colors.keyBg = colorKey.value;
+            kb.colors.keyText = colorText.value;
+            kb.colors.keySpecial = colorSpecial.value;
+            this.store.saveState();
+            this.keyboard.applyThemeStyles();
+            this._renderDesignerCanvas();
+          };
+
+          [colorBoard, colorKey, colorText, colorSpecial].forEach((inp) => {
+            inp.addEventListener("input", syncCustomColors);
+          });
+
+          rangeFont.addEventListener("input", () => {
+            kb.fontSize = parseInt(rangeFont.value, 10);
+            document.getElementById("lbl-kb-fontsize").textContent = kb.fontSize;
+            this.store.saveState();
+            this.keyboard.applyThemeStyles();
+          });
+
+          rangeGap.addEventListener("input", () => {
+            kb.gap = parseInt(rangeGap.value, 10);
+            document.getElementById("lbl-kb-gap").textContent = kb.gap;
+            this.store.saveState();
+            this.keyboard.applyThemeStyles();
+          });
+
+          document.getElementById("btn-reset-keyboard").addEventListener("click", () => {
+            this.store.state.keyboard = JSON.parse(JSON.stringify(DEFAULT_KEYBOARD_LAYOUT));
+            this.keyboard.selectedKeyCoords = null;
+            this.store.saveState();
+            this.keyboard.applyThemeStyles();
+            this._renderDesignerCanvas();
+            this._syncKeyInspector();
+            this.showToast("Keyboard restored to default Yiddish layout.", "info");
+          });
+
+          document.getElementById("btn-add-row").addEventListener("click", () => {
+            this.store.state.keyboard.rows.push([
+              { id: "k_" + Date.now(), primary: "א", shift: "אַ", width: 1 }
+            ]);
+            this.store.saveState();
+            this._renderDesignerCanvas();
+          });
+
+          // Key inspector field listeners
+          const inpPrimary = document.getElementById("edit-key-primary");
+          const inpShift = document.getElementById("edit-key-shift");
+          const inpLabel = document.getElementById("edit-key-label");
+          const selWidth = document.getElementById("edit-key-width");
+
+          const updateSelectedKey = () => {
+            const coords = this.keyboard.selectedKeyCoords;
+            if (!coords) return;
+            const keyObj = this.store.state.keyboard.rows[coords.rowIdx]?.[coords.keyIdx];
+            if (!keyObj) return;
+
+            keyObj.primary = inpPrimary.value;
+            keyObj.shift = inpShift.value;
+            keyObj.label = inpLabel.value.trim() || undefined;
+            keyObj.width = parseFloat(selWidth.value) || 1;
+            this.store.saveState();
+            this._renderDesignerCanvas();
+          };
+
+          [inpPrimary, inpShift, inpLabel, selWidth].forEach((el) => {
+            el.addEventListener("input", updateSelectedKey);
+            el.addEventListener("change", updateSelectedKey);
+          });
+
+          document.getElementById("btn-key-move-right").addEventListener("click", () => {
+            const coords = this.keyboard.selectedKeyCoords;
+            if (!coords || coords.keyIdx <= 0) return;
+            const row = this.store.state.keyboard.rows[coords.rowIdx];
+            [row[coords.keyIdx - 1], row[coords.keyIdx]] = [row[coords.keyIdx], row[coords.keyIdx - 1]];
+            coords.keyIdx -= 1;
+            this.store.saveState();
+            this._renderDesignerCanvas();
+          });
+
+          document.getElementById("btn-key-move-left").addEventListener("click", () => {
+            const coords = this.keyboard.selectedKeyCoords;
+            if (!coords) return;
+            const row = this.store.state.keyboard.rows[coords.rowIdx];
+            if (coords.keyIdx >= row.length - 1) return;
+            [row[coords.keyIdx + 1], row[coords.keyIdx]] = [row[coords.keyIdx], row[coords.keyIdx + 1]];
+            coords.keyIdx += 1;
+            this.store.saveState();
+            this._renderDesignerCanvas();
+          });
+
+          document.getElementById("btn-key-move-up").addEventListener("click", () => {
+            const coords = this.keyboard.selectedKeyCoords;
+            if (!coords || coords.rowIdx <= 0) return;
+            const rows = this.store.state.keyboard.rows;
+            const [movedKey] = rows[coords.rowIdx].splice(coords.keyIdx, 1);
+            const targetRowIdx = coords.rowIdx - 1;
+            rows[targetRowIdx].push(movedKey);
+            if (rows[coords.rowIdx].length === 0) {
+              rows.splice(coords.rowIdx, 1);
+            }
+            this.keyboard.selectedKeyCoords = {
+              rowIdx: targetRowIdx,
+              keyIdx: rows[targetRowIdx].length - 1
+            };
+            this.store.saveState();
+            this._renderDesignerCanvas();
+          });
+
+          document.getElementById("btn-key-move-down").addEventListener("click", () => {
+            const coords = this.keyboard.selectedKeyCoords;
+            const rows = this.store.state.keyboard.rows;
+            if (!coords || coords.rowIdx >= rows.length - 1) return;
+            const [movedKey] = rows[coords.rowIdx].splice(coords.keyIdx, 1);
+            let targetRowIdx = coords.rowIdx + 1;
+            rows[targetRowIdx].push(movedKey);
+            if (rows[coords.rowIdx].length === 0) {
+              rows.splice(coords.rowIdx, 1);
+              targetRowIdx -= 1;
+            }
+            this.keyboard.selectedKeyCoords = {
+              rowIdx: targetRowIdx,
+              keyIdx: rows[targetRowIdx].length - 1
+            };
+            this.store.saveState();
+            this._renderDesignerCanvas();
+          });
+
+          document.getElementById("btn-key-delete").addEventListener("click", () => {
+            const coords = this.keyboard.selectedKeyCoords;
+            if (!coords) return;
+            const row = this.store.state.keyboard.rows[coords.rowIdx];
+            row.splice(coords.keyIdx, 1);
+            if (row.length === 0) {
+              this.store.state.keyboard.rows.splice(coords.rowIdx, 1);
+            }
+            this.keyboard.selectedKeyCoords = null;
+            this.store.saveState();
+            this._renderDesignerCanvas();
+            this._syncKeyInspector();
+          });
+        }
+
+        _renderDesignerCanvas() {
+          const container = document.getElementById("designer-rows-container");
+          container.innerHTML = "";
+          const rows = this.store.state.keyboard.rows;
+
+          rows.forEach((row, rowIdx) => {
+            const rowCard = document.createElement("div");
+            rowCard.style.background = "var(--kb-bg)";
+            rowCard.style.padding = "0.6rem";
+            rowCard.style.borderRadius = "10px";
+            rowCard.style.border = "1px solid var(--border-color)";
+
+            const rowHeader = document.createElement("div");
+            rowHeader.style.display = "flex";
+            rowHeader.style.justifyContent = "space-between";
+            rowHeader.style.alignItems = "center";
+            rowHeader.style.marginBottom = "0.45rem";
+            rowHeader.innerHTML = `<span style="font-size:0.75rem;font-weight:700;color:var(--kb-key-text);background:rgba(255,255,255,0.7);padding:0.15rem 0.45rem;border-radius:5px;">Row ${rowIdx + 1}</span>`;
+
+            const addKeyBtn = document.createElement("button");
+            addKeyBtn.className = "btn btn-sm";
+            addKeyBtn.textContent = "+ Add Key";
+            addKeyBtn.addEventListener("click", () => {
+              row.push({ id: "k_" + Date.now(), primary: "א", shift: "אַ", width: 1 });
+              this.keyboard.selectedKeyCoords = { rowIdx, keyIdx: row.length - 1 };
+              this.store.saveState();
+              this._renderDesignerCanvas();
+              this._syncKeyInspector();
+            });
+            rowHeader.appendChild(addKeyBtn);
+            rowCard.appendChild(rowHeader);
+
+            const keysFlex = document.createElement("div");
+            keysFlex.className = "kb-row";
+            keysFlex.style.direction = "rtl";
+
+            row.forEach((keyObj, keyIdx) => {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "kb-key";
+              btn.style.setProperty("--key-flex", keyObj.width || 1);
+
+              const isSpecial = ["backspace", "enter", "shift", "space"].includes(keyObj.type);
+              if (isSpecial) btn.classList.add("special");
+
+              if (
+                this.keyboard.selectedKeyCoords &&
+                this.keyboard.selectedKeyCoords.rowIdx === rowIdx &&
+                this.keyboard.selectedKeyCoords.keyIdx === keyIdx
+              ) {
+                btn.classList.add("designer-key-selected");
+              }
+
+              btn.textContent = keyObj.label || keyObj.primary;
+              btn.addEventListener("click", () => {
+                this.keyboard.selectedKeyCoords = { rowIdx, keyIdx };
+                this._renderDesignerCanvas();
+                this._syncKeyInspector();
+              });
+
+              keysFlex.appendChild(btn);
+            });
+
+            rowCard.appendChild(keysFlex);
+            container.appendChild(rowCard);
+          });
+        }
+
+        _syncKeyInspector() {
+          const emptyMsg = document.getElementById("key-inspector-empty");
+          const form = document.getElementById("key-inspector-form");
+          const coords = this.keyboard.selectedKeyCoords;
+
+          if (!coords) {
+            emptyMsg.style.display = "block";
+            form.style.display = "none";
+            return;
+          }
+
+          const keyObj = this.store.state.keyboard.rows[coords.rowIdx]?.[coords.keyIdx];
+          if (!keyObj) {
+            emptyMsg.style.display = "block";
+            form.style.display = "none";
+            return;
+          }
+
+          emptyMsg.style.display = "none";
+          form.style.display = "block";
+          document.getElementById("edit-key-primary").value = keyObj.primary || "";
+          document.getElementById("edit-key-shift").value = keyObj.shift || "";
+          document.getElementById("edit-key-label").value = keyObj.label || "";
+          document.getElementById("edit-key-width").value = String(keyObj.width || 1);
+        }
+
+        /* --------------------------------------------------------------------
+           TAB 4: SELF-EXPORT STANDALONE HTML & JSON BACKUP
+           -------------------------------------------------------------------- */
+        _bindExportAndBackup() {
+          document.getElementById("btn-self-export").addEventListener("click", () => {
+            this._exportStandaloneHtmlFile();
+          });
+
+          document.getElementById("btn-export-json").addEventListener("click", () => {
+            const bundle = this.store.getFullExportBundle();
+            const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "yiddish-studio-backup.json";
+            a.click();
+            URL.revokeObjectURL(url);
+            this.showToast("JSON backup downloaded.", "success");
+          });
+
+          document.getElementById("input-import-json").addEventListener("change", async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const parsed = JSON.parse(text);
+              if (parsed.state) {
+                this.store.state = { ...this.store.state, ...parsed.state };
+              }
+              if (parsed.voiceSamples) {
+                this.store.voiceSamples = parsed.voiceSamples;
+                await this.store._persistAllVoiceSamplesToIDB();
+              }
+              this.store.saveState();
+              this.keyboard.renderKeyboard(document.getElementById("onscreen-keyboard"));
+              this._updatePredictions();
+              this._renderDictionaryTable();
+              this._renderTrainerPanel();
+              this._renderDesignerCanvas();
+              this._updateExportStats();
+              this.showToast("Backup restored successfully!", "success");
+            } catch (err) {
+              this.showToast("Invalid JSON backup file.", "error");
+            }
+            e.target.value = "";
+          });
+
+          document.getElementById("btn-factory-reset").addEventListener("click", async () => {
+            await this.store.factoryReset();
+            this.keyboard.renderKeyboard(document.getElementById("onscreen-keyboard"));
+            this._updatePredictions();
+            this._renderDictionaryTable();
+            this._renderTrainerPanel();
+            this._renderDesignerCanvas();
+            this._updateExportStats();
+            this.showToast("All settings, dictionary, and voice samples reset.", "info");
+          });
+        }
+
+        _updateExportStats() {
+          const dictCount = this.store.state.dictionary.length;
+          const trainedWords = Object.keys(this.store.voiceSamples).length;
+          let totalSamples = 0;
+          for (const arr of Object.values(this.store.voiceSamples)) {
+            totalSamples += arr.length;
+          }
+
+          const payloadStr = JSON.stringify(this.store.getFullExportBundle());
+          const baseHtmlOverhead = 52 * 1024;
+          const estKb = Math.round((baseHtmlOverhead + payloadStr.length) / 1024);
+
+          document.getElementById("stat-dict-count").textContent = dictCount;
+          document.getElementById("stat-trained-words").textContent = trainedWords;
+          document.getElementById("stat-sample-count").textContent = totalSamples;
+          document.getElementById("stat-est-size").textContent = estKb + " KB";
+        }
+
+        /**
+         * Crucial Self-Exporting Feature:
+         * Clones a clean copy of this entire HTML document without transient runtime DOM
+         * mutations, injects the full serialized state + MFCC voice fingerprints into
+         * <script id="preloaded-state" type="application/json">, and downloads the standalone file.
+         */
+        _exportStandaloneHtmlFile() {
+          try {
+            const filenameInput = document.getElementById("input-export-filename").value.trim();
+            const filename = filenameInput
+              ? (filenameInput.endsWith(".html") ? filenameInput : filenameInput + ".html")
+              : "my-yiddish-keyboard.html";
+
+            // Clone document root cleanly
+            const docClone = document.documentElement.cloneNode(true);
+
+            // Reset transient runtime UI states in the cloned DOM
+            const clonedEditor = docClone.querySelector("#yiddish-editor");
+            if (clonedEditor) {
+              clonedEditor.value = "";
+              clonedEditor.textContent = "";
+            }
+            const clonedStats = docClone.querySelector("#editor-stats");
+            if (clonedStats) clonedStats.textContent = "0 words · 0 characters";
+
+            const clonedKeyboard = docClone.querySelector("#onscreen-keyboard");
+            if (clonedKeyboard) clonedKeyboard.innerHTML = "";
+
+            const clonedPredictions = docClone.querySelector("#prediction-list");
+            if (clonedPredictions) clonedPredictions.innerHTML = "";
+
+            const clonedDictBody = docClone.querySelector("#dict-table-body");
+            if (clonedDictBody) clonedDictBody.innerHTML = "";
+
+            const clonedSlots = docClone.querySelector("#sample-slots-container");
+            if (clonedSlots) clonedSlots.innerHTML = "";
+
+            const clonedDesigner = docClone.querySelector("#designer-rows-container");
+            if (clonedDesigner) clonedDesigner.innerHTML = "";
+
+            const clonedToasts = docClone.querySelector("#toast-container");
+            if (clonedToasts) clonedToasts.innerHTML = "";
+
+            const clonedModal = docClone.querySelector("#modal-bulk-import");
+            if (clonedModal) clonedModal.classList.remove("open");
+
+            // Ensure Tab 1 is marked active in exported initial view
+            docClone.querySelectorAll(".tab-btn").forEach((b, i) => {
+              b.classList.toggle("active", i === 0);
+            });
+            docClone.querySelectorAll(".tab-panel").forEach((p, i) => {
+              p.classList.toggle("active", i === 0);
+            });
+
+            // Serialize full store + MFCC voice fingerprints safely (escaping '<' as \u003c)
+            const exportBundle = this.store.getFullExportBundle();
+            const safeJson = JSON.stringify(exportBundle).replace(/</g, "\\u003c");
+
+            const payloadScript = docClone.querySelector("#preloaded-state");
+            if (payloadScript) {
+              payloadScript.textContent = safeJson;
+            }
+
+            const finalHtml = "<!DOCTYPE html>\n" + docClone.outerHTML;
+            const blob = new Blob([finalHtml], { type: "text/html;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+
+            this.showToast(`Exported standalone "${filename}" successfully!`, "success");
+          } catch (err) {
+            console.error("Self-export failed:", err);
+            this.showToast("Failed to export standalone HTML file.", "error");
+          }
+        }
+
+        _escapeHtml(str) {
+          return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+      }
+
+      // Boot application safely whether DOMContentLoaded has already fired or not
+      const startApp = () => {
+        try {
+          const app = new AppUI();
+          app.boot();
+        } catch (err) {
+          console.error("Application boot error:", err);
+        }
+      };
+
+      if (document.readyState === "loading") {
+        window.addEventListener("DOMContentLoaded", startApp);
+      } else {
+        startApp();
+      }
+    })();
+  </script>
+</body>
+</html>
